@@ -1,6 +1,6 @@
 using System;
 
-namespace GhostPlugin.Attributes
+namespace XrmGhost.Attributes
 {
     /// <summary>
     /// Specifies the default unsecure configuration for a plugin.

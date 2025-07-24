@@ -1,6 +1,6 @@
 using System;
 
-namespace GhostPlugin.Attributes
+namespace XrmGhost.Attributes
 {
     /// <summary>
     /// Specifies an expected output parameter for a plugin's execution context.

@@ -1,6 +1,6 @@
 using System;
 
-namespace GhostPlugin.Attributes
+namespace XrmGhost.Attributes
 {
     /// <summary>
     /// Specifies default execution context parameters for a plugin.

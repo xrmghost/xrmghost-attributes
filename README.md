@@ -1,8 +1,8 @@
-# GhostPlugin.Attributes
+# XrmGhost.Attributes
 
-**GhostPlugin.Attributes** is a dedicated .NET library providing a set of custom attributes designed to streamline and simplify the development of plugins for Microsoft Dataverse. This package allows developers to use a declarative, attribute-based approach to define plugin configurations, message handling, and data context, reducing boilerplate code and improving maintainability.
+**XrmGhost.Attributes** is a dedicated .NET library providing a set of custom attributes designed to streamline and simplify the development of plugins for Microsoft Dataverse. This package allows developers to use a declarative, attribute-based approach to define plugin configurations, message handling, and data context, reducing boilerplate code and improving maintainability.
 
-This library is a core component of the GhostPlugin ecosystem and is now delivered as a standalone NuGet package to facilitate isolated and version-controlled development.
+This library is a core component of the XrmGhost ecosystem and is now delivered as a standalone NuGet package to facilitate isolated and version-controlled development.
 
 ## Overview
 
@@ -35,10 +35,10 @@ This package provides the following attributes:
 
 ## Getting Started
 
-To use this library, add the `GhostPlugin.Attributes` NuGet package to your Dataverse plugin project.
+To use this library, add the `XrmGhost.Attributes` NuGet package to your Dataverse plugin project.
 
 ```bash
-dotnet add package GhostPlugin.Attributes
+dotnet add package XrmGhost.Attributes
 ```
 
 ### Example Usage
@@ -46,7 +46,7 @@ dotnet add package GhostPlugin.Attributes
 Here is a conceptual example of how you might use these attributes in a plugin class:
 
 ```csharp
-using GhostPlugin.Attributes;
+using XrmGhost.Attributes;
 
 [HandlesMessage("Update")]
 [PreImage("primary")]
@@ -63,7 +63,7 @@ public class MyAwesomePlugin : IPlugin
 
     public void Execute(IServiceProvider serviceProvider)
     {
-        // The GhostPlugin framework will automatically populate the properties
+        // The XrmGhost framework will automatically populate the properties
         // decorated with attributes before this method is called.
 
         // Your business logic here...
@@ -74,7 +74,7 @@ public class MyAwesomePlugin : IPlugin
 
 ## Contributing
 
-This project is part of the larger GhostPlugin ecosystem. For information on contributing, please refer to the main repository's contribution guidelines.
+This project is part of the larger XrmGhost ecosystem. For information on contributing, please refer to the main repository's contribution guidelines.
 
 ---
 *This README was generated as part of the project's migration to a standalone NuGet package.*

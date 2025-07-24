@@ -1,14 +1,14 @@
 # Changelog
 
-All notable changes to the **GhostPlugin.Attributes** library will be documented in this file.
+All notable changes to the **XrmGhost.Attributes** library will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] - 2025-07-24
+## [0.6.25] - 2025-07-24
 
 ### Added
 
-- **Initial Public Release:** This is the first version of the `GhostPlugin.Attributes` library as a standalone NuGet package. The code was extracted from the main GhostPlugin repository to improve modularity and dependency management.
+- **Initial Public Release:** This is the first version of the `XrmGhost.Attributes` library as a standalone NuGet package. The code was extracted from the main XrmGhost repository to improve modularity and dependency management.
 
 ### Feature History (Pre-Packaging)
 

@@ -1,0 +1,94 @@
+name: Publish NuGet Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'The branch to release from'
+        required: true
+        default: 'main'
+
+jobs:
+  build-and-publish:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+          # Fetch all history for changelog generation if ever needed
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Set NuGet source
+        run: dotnet nuget add source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --name github --username ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text
+
+      - name: Get Version From Changelog
+        id: get_version
+        shell: pwsh
+        run: |
+          $changelog = Get-Content -Path CHANGELOG.md -Raw
+          # Regex to find the first version link like [1.0.1]
+          $match = [regex]::Match($changelog, '\[(\d+\.\d+\.\d+)\]')
+          if (-not $match.Success) {
+            Write-Error "❌ No version found in CHANGELOG.md matching the format [x.y.z]"
+            exit 1
+          }
+          $version = $match.Groups[1].Value
+          Write-Host "✅ Version found in changelog: $version"
+          echo "VERSION=$version" >> $env:GITHUB_ENV
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Find solution file
+        id: solution
+        run: |
+          $sln = Get-ChildItem -Filter *.sln | Select-Object -First 1
+          echo "solution=$($sln.Name)" >> $env:GITHUB_OUTPUT
+
+      - name: Update csproj version
+        shell: pwsh
+        run: |
+          $file = Get-ChildItem -Filter *.csproj | Select-Object -First 1
+          $version = "${{ steps.get_version.outputs.version }}"
+          Write-Host "Updating $($file.Name) to version $version"
+          $xml = [xml](Get-Content $file.FullName)
+          $xml.Project.PropertyGroup.VersionPrefix = $version
+          $xml.Project.PropertyGroup.AssemblyVersion = $version
+          $xml.Project.PropertyGroup.FileVersion = $version
+          $xml.Save($file.FullName)
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ steps.solution.outputs.solution }}
+
+      - name: Build solution
+        run: dotnet build ${{ steps.solution.outputs.solution }} -c Release --no-restore
+
+      - name: Pack solution
+        run: dotnet pack ${{ steps.solution.outputs.solution }} -c Release --no-build --output ./nupkg /p:PackageVersion=${{ steps.get_version.outputs.version }}
+
+      - name: Push to GitHub Packages
+        shell: pwsh
+        run: |
+          $pkg = Get-ChildItem -Recurse -Filter *.nupkg | Select-Object -First 1
+          if ($pkg) {
+            dotnet nuget push "$($pkg.FullName)" --source "github" --api-key "${{ secrets.GITHUB_TOKEN }}" --skip-duplicate
+          } else {
+            Write-Error "❌ No .nupkg package found to publish."; exit 1
+          }
+
+      - name: Commit and Tag Version Bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add *.csproj
+          git commit -m "chore: Apply version ${{ env.VERSION }}" -m "Update .csproj to reflect version from CHANGELOG.md"
+          git tag v${{ env.VERSION }}
+          git push origin ${{ github.event.inputs.branch }} ; git push origin v${{ env.VERSION }}
