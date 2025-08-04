@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
-### Changed
+## [0.6.26] - 2025-08-04
 
 - **PluginExecutionConfigAttribute Enhancement:** Updated `PluginExecutionConfigAttribute` to support multiple registrations on the same class by setting `AllowMultiple = true`. This enables plugins to be registered for multiple entities with different configurations.
 - **Message Handling Support:** Extended `PluginExecutionConfigAttribute` to accept an optional `Messages` parameter that allows specifying multiple SDK messages (e.g., "Create", "Update") for a single entity registration. The messages parameter is optional - if not specified, the configuration applies to all messages for the entity.
