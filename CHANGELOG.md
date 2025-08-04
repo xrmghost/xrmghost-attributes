@@ -4,6 +4,18 @@ All notable changes to the **XrmGhost.Attributes** library will be documented in
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **PluginExecutionConfigAttribute Enhancement:** Updated `PluginExecutionConfigAttribute` to support multiple registrations on the same class by setting `AllowMultiple = true`. This enables plugins to be registered for multiple entities with different configurations.
+- **Message Handling Support:** Extended `PluginExecutionConfigAttribute` to accept an optional `Messages` parameter that allows specifying multiple SDK messages (e.g., "Create", "Update") for a single entity registration. The messages parameter is optional - if not specified, the configuration applies to all messages for the entity.
+- **Constructor Changes:** Modified the constructor to require `primaryEntityName` as a mandatory parameter and accept optional `messages` as a params array, improving the attribute's usability and clarity.
+
+### Breaking Changes
+
+- **Constructor Signature:** The `PluginExecutionConfigAttribute` constructor now requires a `primaryEntityName` parameter and optionally accepts message names, replacing the previous parameterless constructor with property setters.
+
 ## [0.6.25] - 2025-07-24
 
 ### Added

@@ -48,9 +48,10 @@ Here is a conceptual example of how you might use these attributes in a plugin c
 ```csharp
 using XrmGhost.Attributes;
 
-[HandlesMessage("Update")]
+// Example 1: Single entity with multiple messages
+[PluginExecutionConfigAttribute("account", "Create", "Update")]
 [PreImage("primary")]
-public class MyAwesomePlugin : IPlugin
+public class AccountPlugin : IPlugin
 {
     [InputParameter("Target")]
     public Entity TargetEntity { get; set; }
@@ -68,6 +69,37 @@ public class MyAwesomePlugin : IPlugin
 
         // Your business logic here...
         // You can now directly use TargetEntity, PreImageEntity, and MyConfigValue.
+    }
+}
+
+// Example 2: Multiple entities with different configurations
+[PluginExecutionConfigAttribute("account", "Create", "Update")]
+[PluginExecutionConfigAttribute("contact", "Create")]
+[PluginExecutionConfigAttribute("opportunity", "Update", "Delete")]
+public class MultiEntityPlugin : IPlugin
+{
+    [InputParameter("Target")]
+    public Entity TargetEntity { get; set; }
+
+    public void Execute(IServiceProvider serviceProvider)
+    {
+        // This plugin will be registered for:
+        // - Account: Create and Update messages
+        // - Contact: Create message only
+        // - Opportunity: Update and Delete messages
+    }
+}
+
+// Example 3: Entity registration without specific messages (applies to all messages)
+[PluginExecutionConfigAttribute("account")]
+public class AllMessagesPlugin : IPlugin
+{
+    [InputParameter("Target")]
+    public Entity TargetEntity { get; set; }
+
+    public void Execute(IServiceProvider serviceProvider)
+    {
+        // This plugin will be registered for all messages on the account entity
     }
 }
 ```
