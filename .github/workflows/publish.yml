@@ -28,6 +28,31 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: Setup Strong Name Signing
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          try {
+            # Create the strong name key file from GitHub secret
+            if ("${{ secrets.STRONG_NAME_KEY_FULL }}" -ne "") {
+              $keyBytes = [Convert]::FromBase64String("${{ secrets.STRONG_NAME_KEY_FULL }}")
+              [IO.File]::WriteAllBytes("XrmGhost.Attributes.snk", $keyBytes)
+              Write-Host "✅ Strong name key file created successfully"
+              
+              # Verify the key file
+              $snPath = Get-ChildItem -Recurse -Filter "sn.exe" -Path "C:\Program Files*" | Select-Object -First 1
+              if ($snPath) {
+                & $snPath.FullName -v XrmGhost.Attributes.snk
+                Write-Host "✅ Strong name key file verified"
+              }
+            } else {
+              Write-Warning "⚠️ STRONG_NAME_KEY_FULL secret not found - building without strong naming"
+            }
+          } catch {
+            Write-Warning "⚠️ Failed to setup strong name signing: $($_.Exception.Message)"
+            Write-Host "Building will continue without strong naming..."
+          }
+
       - name: Set NuGet source
         run: dotnet nuget add source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --name github --username ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text
 
@@ -73,6 +98,43 @@ jobs:
 
       - name: Pack solution
         run: dotnet pack ${{ steps.solution.outputs.solution }} -c Release --no-build --output ./nupkg /p:PackageVersion=${{ steps.get_version.outputs.version }}
+
+      - name: Verify Strong Name Signing
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          try {
+            # Find the built assembly
+            $assembly = Get-ChildItem -Recurse -Filter "XrmGhost.Attributes.dll" -Path "./bin" | Select-Object -First 1
+            if ($assembly) {
+              # Check if assembly is strong named
+              $snPath = Get-ChildItem -Recurse -Filter "sn.exe" -Path "C:\Program Files*" | Select-Object -First 1
+              if ($snPath) {
+                Write-Host "🔍 Checking strong name signature on: $($assembly.FullName)"
+                $result = & $snPath.FullName -vf $assembly.FullName 2>&1
+                if ($LASTEXITCODE -eq 0) {
+                  Write-Host "✅ Assembly is successfully strong named!"
+                  Write-Host "$result"
+                } else {
+                  Write-Warning "⚠️ Assembly signing verification failed or assembly not signed"
+                  Write-Host "$result"
+                }
+              }
+            } else {
+              Write-Warning "⚠️ Could not find built assembly for verification"
+            }
+          } catch {
+            Write-Warning "⚠️ Strong name verification failed: $($_.Exception.Message)"
+          }
+
+      - name: Cleanup Strong Name Key
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path "XrmGhost.Attributes.snk") {
+            Remove-Item "XrmGhost.Attributes.snk" -Force
+            Write-Host "🧹 Strong name key file cleaned up"
+          }
 
       - name: Push to GitHub Packages
         shell: pwsh

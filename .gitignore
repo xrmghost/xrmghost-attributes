@@ -47,3 +47,7 @@ replacements.txt
 rebranding.ps1
 projectmemory.md
 tasks.md
+
+# Strong Name Key Files
+*.snk
+*.pub

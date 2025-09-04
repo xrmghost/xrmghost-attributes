@@ -8,6 +8,9 @@
     <AssemblyVersion>0.6.26</AssemblyVersion>
     <FileVersion>0.6.26</FileVersion>
     <VersionPrefix>0.6.26</VersionPrefix>
+    <!-- Strong Name Signing Configuration (conditional) -->
+    <SignAssembly Condition="Exists('XrmGhost.Attributes.snk')">true</SignAssembly>
+    <AssemblyOriginatorKeyFile Condition="Exists('XrmGhost.Attributes.snk')">XrmGhost.Attributes.snk</AssemblyOriginatorKeyFile>
     <!-- usato per NuGet -->
     <PackageId>XrmGhost.Attributes</PackageId>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>

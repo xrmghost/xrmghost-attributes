@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- **Strong Name Signing:** Implemented strong name signing for the XrmGhost.Attributes assembly to eliminate CS8002 warnings when consumers reference the package. The assembly is now signed during the GitHub Actions build process using secure key management, ensuring assembly integrity and compatibility with strong naming policies.
 - **Column Filtering for Entity Images:** Added optional `Attributes` property to both `PreImageAttribute` and `PostImageAttribute` to support column filtering during image registration. This enables better performance and supports automated registration tools that need to specify which columns to include in the entity images.
 - **User Impersonation Support:** Added `ImpersonatingUserId` property to `PluginExecutionConfigAttribute` to specify under which user the plugin should be registered. Essential for automated registration tools to configure proper security context.
 - **Solution Component Management:** Added new `SolutionComponentAttribute` to specify which solution(s) plugin components should be added to during automated registration. Includes `IsDefault` flag for primary solution identification and supports multiple solutions per plugin.
