@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **Column Filtering for Entity Images:** Added optional `Attributes` property to both `PreImageAttribute` and `PostImageAttribute` to support column filtering during image registration. This enables better performance and supports automated registration tools that need to specify which columns to include in the entity images.
+- **User Impersonation Support:** Added `ImpersonatingUserId` property to `PluginExecutionConfigAttribute` to specify under which user the plugin should be registered. Essential for automated registration tools to configure proper security context.
+- **Solution Component Management:** Added new `SolutionComponentAttribute` to specify which solution(s) plugin components should be added to during automated registration. Includes `IsDefault` flag for primary solution identification and supports multiple solutions per plugin.
+
+### Enhanced
+
+- **Improved Documentation:** Enhanced XML documentation for `PreImageAttribute`, `PostImageAttribute`, and `PluginExecutionConfigAttribute` with detailed examples and usage scenarios.
+- **README Examples:** Added comprehensive examples showcasing all new features including column filtering, user impersonation, and multi-solution deployment scenarios.
+
+### Developer Experience
+
+- All enhancements maintain full backward compatibility with existing code.
+- New properties are optional/nullable, ensuring no breaking changes.
+- Enhanced IntelliSense support with detailed XML documentation and code examples.
+
 ## [0.6.26] - 2025-08-04
 
 - **PluginExecutionConfigAttribute Enhancement:** Updated `PluginExecutionConfigAttribute` to support multiple registrations on the same class by setting `AllowMultiple = true`. This enables plugins to be registered for multiple entities with different configurations.

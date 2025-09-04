@@ -26,12 +26,13 @@ This package provides the following attributes:
 - `HandlesMessageAttribute`: Specifies the SDK message that the plugin will handle (e.g., "Create", "Update").
 - `InputParameterAttribute`: Maps a plugin's input parameter to a class property.
 - `OutputParameterAttribute`: Maps a plugin's output parameter to a class property.
-- `PluginExecutionConfigAttribute`: A general-purpose attribute for configuring plugin execution behavior.
-- `PreImageAttribute`: Specifies that a property should be populated with the Pre-operation entity image.
-- `PostImageAttribute`: Specifies that a property should be populated with the Post-operation entity image.
+- `PluginExecutionConfigAttribute`: A general-purpose attribute for configuring plugin execution behavior, including user impersonation.
+- `PreImageAttribute`: Specifies that a property should be populated with the Pre-operation entity image, with optional column filtering.
+- `PostImageAttribute`: Specifies that a property should be populated with the Post-operation entity image, with optional column filtering.
 - `SecureConfigurationAttribute`: Injects the secure configuration string into a property.
 - `UnsecureConfigurationAttribute`: Injects the unsecure configuration string into a property.
 - `SharedVariableAttribute`: Manages shared variables within the plugin execution context.
+- `SolutionComponentAttribute`: Specifies which solution(s) the plugin component should be added to during automated registration.
 
 ## Getting Started
 
@@ -100,6 +101,97 @@ public class AllMessagesPlugin : IPlugin
     public void Execute(IServiceProvider serviceProvider)
     {
         // This plugin will be registered for all messages on the account entity
+    }
+}
+```
+
+### Enhanced Features Examples
+
+```csharp
+using XrmGhost.Attributes;
+
+// Example 4: Column filtering for entity images
+[PluginExecutionConfigAttribute("account", "Update")]
+[SolutionComponent("CoreBusinessLogic", IsDefault = true)]
+[SolutionComponent("ExtendedFeatures")]
+public class AccountUpdatePlugin : IPlugin
+{
+    [InputParameter("Target")]
+    public Entity TargetEntity { get; set; }
+
+    // Pre-image with specific columns only for better performance
+    [PreImage("primary", "{...json...}", Attributes = new[] { "name", "accountid", "createdon", "revenue" })]
+    public Entity PreImageEntity { get; set; }
+
+    // Post-image with filtered columns
+    [PostImage("updated", "{...json...}", Attributes = new[] { "name", "modifiedon", "revenue" })]
+    public Entity PostImageEntity { get; set; }
+
+    public void Execute(IServiceProvider serviceProvider)
+    {
+        // Business logic with optimized image retrieval
+    }
+}
+
+// Example 5: User impersonation for plugin registration
+[PluginExecutionConfigAttribute("lead", "Create", "Update", 
+    Stage = 20, Mode = 0, 
+    ImpersonatingUserId = "12345678-1234-1234-1234-123456789012")]
+[SolutionComponent("LeadManagement")]
+public class LeadProcessorPlugin : IPlugin
+{
+    [InputParameter("Target")]
+    public Entity TargetEntity { get; set; }
+
+    public void Execute(IServiceProvider serviceProvider)
+    {
+        // This plugin will run under the specified user context
+        // regardless of who triggers the operation
+    }
+}
+
+// Example 6: Multiple solutions with default priority
+[SolutionComponent("CoreCRM", IsDefault = true)]  // Primary solution
+[SolutionComponent("SalesEnhancements")]          // Additional solution
+[SolutionComponent("TestEnvironment")]            // Test deployment
+[PluginExecutionConfigAttribute("opportunity", "Create", "Update", "Delete")]
+public class OpportunityPlugin : IPlugin
+{
+    [InputParameter("Target")]
+    public Entity TargetEntity { get; set; }
+
+    public void Execute(IServiceProvider serviceProvider)
+    {
+        // Plugin will be added to multiple solutions
+        // with CoreCRM being the primary/default solution
+    }
+}
+
+// Example 7: Complex multi-entity plugin with all enhancements
+[PluginExecutionConfigAttribute("account", "Create", "Update", Stage = 20, Mode = 0)]
+[PluginExecutionConfigAttribute("contact", "Create", Stage = 20, Mode = 0, 
+    ImpersonatingUserId = "87654321-4321-4321-4321-210987654321")]
+[SolutionComponent("CustomerManagement", IsDefault = true)]
+[SolutionComponent("DataIntegration")]
+public class CustomerDataPlugin : IPlugin
+{
+    [InputParameter("Target")]
+    public Entity TargetEntity { get; set; }
+
+    [PreImage("primary", "{...json...}", 
+        Attributes = new[] { "name", "emailaddress1", "telephone1", "createdon" })]
+    public Entity PreImageEntity { get; set; }
+
+    [UnsecureConfiguration]
+    public string ConfigValue { get; set; }
+
+    public void Execute(IServiceProvider serviceProvider)
+    {
+        // Comprehensive plugin with:
+        // - Multi-entity registration
+        // - Column-filtered images
+        // - User impersonation for contact operations
+        // - Multi-solution deployment
     }
 }
 ```

@@ -23,6 +23,18 @@ namespace XrmGhost.Attributes
         public string EntityJson { get; }
 
         /// <summary>
+        /// Gets or sets the attributes (columns) to include in the post-entity image.
+        /// If null or not specified, all attributes will be included in the image registration.
+        /// This property is used by automated registration tools to configure column filtering.
+        /// </summary>
+        /// <example>
+        /// <code>
+        /// [PostImage("primary", entityJson, Attributes = new[] { "name", "accountid", "modifiedon" })]
+        /// </code>
+        /// </example>
+        public string[]? Attributes { get; set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="PostImageAttribute"/> class.
         /// </summary>
         /// <param name="name">The name (alias) of the post-entity image.</param>

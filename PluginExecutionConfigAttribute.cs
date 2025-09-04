@@ -37,6 +37,18 @@ namespace XrmGhost.Attributes
         public int Mode { get; set; } = -1; // Default to unassigned
 
         /// <summary>
+        /// Gets or sets the User ID under which the plugin should be registered.
+        /// If null or not specified, the plugin will run under the user who triggers the operation.
+        /// This property is used by automated registration tools to configure the impersonating user context.
+        /// </summary>
+        /// <example>
+        /// <code>
+        /// [PluginExecutionConfig("account", "Create", ImpersonatingUserId = "12345678-1234-1234-1234-123456789012")]
+        /// </code>
+        /// </example>
+        public string? ImpersonatingUserId { get; set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="PluginExecutionConfigAttribute"/> class.
         /// </summary>
         /// <param name="primaryEntityName">The logical name of the primary entity.</param>
@@ -63,5 +75,6 @@ namespace XrmGhost.Attributes
             PrimaryEntityName = primaryEntityName;
             Messages = messages;
         }
+
     }
 }
