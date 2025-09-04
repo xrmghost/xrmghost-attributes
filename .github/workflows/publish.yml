@@ -39,11 +39,13 @@ jobs:
               [IO.File]::WriteAllBytes("XrmGhost.Attributes.snk", $keyBytes)
               Write-Host "✅ Strong name key file created successfully"
               
-              # Verify the key file
-              $snPath = Get-ChildItem -Recurse -Filter "sn.exe" -Path "C:\Program Files*" | Select-Object -First 1
-              if ($snPath) {
-                & $snPath.FullName -v XrmGhost.Attributes.snk
+              # Verify the key file (using known path for faster execution)
+              $snPath = "C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools\sn.exe"
+              if (Test-Path $snPath) {
+                & $snPath -v XrmGhost.Attributes.snk
                 Write-Host "✅ Strong name key file verified"
+              } else {
+                Write-Warning "⚠️ sn.exe not found at expected location, skipping verification"
               }
             } else {
               Write-Warning "⚠️ STRONG_NAME_KEY_FULL secret not found - building without strong naming"
@@ -107,11 +109,11 @@ jobs:
             # Find the built assembly
             $assembly = Get-ChildItem -Recurse -Filter "XrmGhost.Attributes.dll" -Path "./bin" | Select-Object -First 1
             if ($assembly) {
-              # Check if assembly is strong named
-              $snPath = Get-ChildItem -Recurse -Filter "sn.exe" -Path "C:\Program Files*" | Select-Object -First 1
-              if ($snPath) {
+              # Check if assembly is strong named (using known path for faster execution)
+              $snPath = "C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools\sn.exe"
+              if (Test-Path $snPath) {
                 Write-Host "🔍 Checking strong name signature on: $($assembly.FullName)"
-                $result = & $snPath.FullName -vf $assembly.FullName 2>&1
+                $result = & $snPath -vf $assembly.FullName 2>&1
                 if ($LASTEXITCODE -eq 0) {
                   Write-Host "✅ Assembly is successfully strong named!"
                   Write-Host "$result"
@@ -119,6 +121,8 @@ jobs:
                   Write-Warning "⚠️ Assembly signing verification failed or assembly not signed"
                   Write-Host "$result"
                 }
+              } else {
+                Write-Warning "⚠️ sn.exe not found at expected location, skipping verification"
               }
             } else {
               Write-Warning "⚠️ Could not find built assembly for verification"
