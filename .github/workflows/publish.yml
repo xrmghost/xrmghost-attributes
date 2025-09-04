@@ -39,13 +39,37 @@ jobs:
               [IO.File]::WriteAllBytes("XrmGhost.Attributes.snk", $keyBytes)
               Write-Host "✅ Strong name key file created successfully"
               
-              # Verify the key file (using known path for faster execution)
-              $snPath = "C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools\sn.exe"
-              if (Test-Path $snPath) {
+              # Smart path discovery for sn.exe (future-proof against runner changes)
+              $knownPaths = @(
+                "C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools\sn.exe",
+                "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\sn.exe", 
+                "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\sn.exe",
+                "C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.7.2 Tools\sn.exe"
+              )
+              
+              $snPath = $null
+              foreach ($path in $knownPaths) {
+                if ($path -like "*\*\*") {
+                  # Handle wildcard paths
+                  $found = Get-ChildItem -Path $path -ErrorAction SilentlyContinue | Select-Object -First 1
+                  if ($found) { $snPath = $found.FullName; break }
+                } elseif (Test-Path $path) {
+                  $snPath = $path; break
+                }
+              }
+              
+              if (-not $snPath) {
+                # Fallback: targeted search in SDK directories only
+                Write-Host "🔍 Known paths not found, searching SDK directories..."
+                $snPath = Get-ChildItem -Recurse -Filter "sn.exe" -Path "C:\Program Files*\Microsoft SDKs", "C:\Program Files*\Windows Kits" -ErrorAction SilentlyContinue | Select-Object -First 1 | ForEach-Object { $_.FullName }
+              }
+              
+              if ($snPath) {
+                Write-Host "📍 Found sn.exe at: $snPath"
                 & $snPath -v XrmGhost.Attributes.snk
                 Write-Host "✅ Strong name key file verified"
               } else {
-                Write-Warning "⚠️ sn.exe not found at expected location, skipping verification"
+                Write-Warning "⚠️ sn.exe not found, skipping verification (signing will still work via MSBuild)"
               }
             } else {
               Write-Warning "⚠️ STRONG_NAME_KEY_FULL secret not found - building without strong naming"
@@ -109,10 +133,34 @@ jobs:
             # Find the built assembly
             $assembly = Get-ChildItem -Recurse -Filter "XrmGhost.Attributes.dll" -Path "./bin" | Select-Object -First 1
             if ($assembly) {
-              # Check if assembly is strong named (using known path for faster execution)
-              $snPath = "C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools\sn.exe"
-              if (Test-Path $snPath) {
+              # Smart path discovery for sn.exe (same as setup step)
+              $knownPaths = @(
+                "C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools\sn.exe",
+                "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\sn.exe", 
+                "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\sn.exe",
+                "C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.7.2 Tools\sn.exe"
+              )
+              
+              $snPath = $null
+              foreach ($path in $knownPaths) {
+                if ($path -like "*\*\*") {
+                  # Handle wildcard paths
+                  $found = Get-ChildItem -Path $path -ErrorAction SilentlyContinue | Select-Object -First 1
+                  if ($found) { $snPath = $found.FullName; break }
+                } elseif (Test-Path $path) {
+                  $snPath = $path; break
+                }
+              }
+              
+              if (-not $snPath) {
+                # Fallback: targeted search in SDK directories only
+                Write-Host "🔍 Known paths not found, searching SDK directories..."
+                $snPath = Get-ChildItem -Recurse -Filter "sn.exe" -Path "C:\Program Files*\Microsoft SDKs", "C:\Program Files*\Windows Kits" -ErrorAction SilentlyContinue | Select-Object -First 1 | ForEach-Object { $_.FullName }
+              }
+              
+              if ($snPath) {
                 Write-Host "🔍 Checking strong name signature on: $($assembly.FullName)"
+                Write-Host "📍 Using sn.exe at: $snPath"
                 $result = & $snPath -vf $assembly.FullName 2>&1
                 if ($LASTEXITCODE -eq 0) {
                   Write-Host "✅ Assembly is successfully strong named!"
@@ -122,7 +170,7 @@ jobs:
                   Write-Host "$result"
                 }
               } else {
-                Write-Warning "⚠️ sn.exe not found at expected location, skipping verification"
+                Write-Warning "⚠️ sn.exe not found, skipping verification (assembly may still be signed by MSBuild)"
               }
             } else {
               Write-Warning "⚠️ Could not find built assembly for verification"
