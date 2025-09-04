@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.6.27] - 2025-09-04
+
 ### Added
 
 - **Strong Name Signing:** Implemented strong name signing for the XrmGhost.Attributes assembly to eliminate CS8002 warnings when consumers reference the package. The assembly is now signed during the GitHub Actions build process using secure key management, ensuring assembly integrity and compatibility with strong naming policies.
