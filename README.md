@@ -80,18 +80,20 @@ Or add the reference directly to your `.csproj`:
 
 ## Included Attributes
 
-| Attribute | Target | Description |
-|---|---|---|
-| `PluginExecutionConfigAttribute` | Class | Declares entity + messages the plugin handles; supports stage, mode, and impersonation. Repeatable. |
-| `HandlesMessageAttribute` | Class | Declares a single SDK message the plugin handles. Repeatable. |
-| `InputParameterAttribute` | Class | Declares an input parameter name and its default JSON value. Repeatable. |
-| `OutputParameterAttribute` | Class | Declares an expected output parameter name and its expected JSON value. Repeatable. |
-| `PreImageAttribute` | Class | Declares a pre-operation entity image alias and its JSON seed value. Repeatable. |
-| `PostImageAttribute` | Class | Declares a post-operation entity image alias and its JSON seed value. Repeatable. |
-| `SecureConfigurationAttribute` | Class | Declares the default secure configuration string. Single use. |
-| `UnsecureConfigurationAttribute` | Class | Declares the default unsecure configuration string. Single use. |
-| `SharedVariableAttribute` | Class | Declares a shared variable name and its default JSON value. Repeatable. |
-| `SolutionComponentAttribute` | Class | Declares which solution(s) the plugin should be registered in. Repeatable. |
+All attributes target **`AttributeTargets.Class`** — they must be placed on the plugin class, not on individual members.
+
+| Attribute | Description |
+|---|---|
+| `PluginExecutionConfigAttribute` | Declares entity + messages the plugin handles; supports stage, mode, and impersonation. Repeatable. |
+| `HandlesMessageAttribute` | Declares a single SDK message the plugin handles. Repeatable. |
+| `InputParameterAttribute` | Declares an input parameter name and its default JSON value. Repeatable. |
+| `OutputParameterAttribute` | Declares an expected output parameter name and its expected JSON value. Repeatable. |
+| `PreImageAttribute` | Declares a pre-operation entity image alias and its JSON seed value. Repeatable. |
+| `PostImageAttribute` | Declares a post-operation entity image alias and its JSON seed value. Repeatable. |
+| `SecureConfigurationAttribute` | Declares the default secure configuration string. Single use. |
+| `UnsecureConfigurationAttribute` | Declares the default unsecure configuration string. Single use. |
+| `SharedVariableAttribute` | Declares a shared variable name and its default JSON value. Repeatable. |
+| `SolutionComponentAttribute` | Declares which solution(s) the plugin should be registered in. Repeatable. |
 
 ---
 
@@ -107,21 +109,16 @@ using Microsoft.Xrm.Sdk;
 
 [PluginExecutionConfigAttribute("account", "Create", "Update")]
 [PreImageAttribute("primary", "{ \"__entityName\": \"account\", \"accountid\": \"00000000-0000-0000-0000-000000000001\", \"name\": \"Old Name\" }")]
+[InputParameterAttribute("Target", "{ \"__entityName\": \"account\", \"accountid\": \"00000000-0000-0000-0000-000000000001\" }")]
 public class AccountPlugin : IPlugin
 {
-    [InputParameterAttribute("Target", "{ \"__entityName\": \"account\", \"accountid\": \"00000000-0000-0000-0000-000000000001\" }")]
     public Entity TargetEntity { get; set; }
-
-    [PreImageAttribute("primary", "{ \"__entityName\": \"account\", \"accountid\": \"00000000-0000-0000-0000-000000000001\", \"name\": \"Old Name\" }")]
     public Entity PreImageEntity { get; set; }
-
-    [UnsecureConfigurationAttribute("{ \"featureFlag\": true }")]
-    public string ConfigValue { get; set; }
 
     public void Execute(IServiceProvider serviceProvider)
     {
-        // When used with xrmghost-framework-host, TargetEntity, PreImageEntity
-        // and ConfigValue are populated automatically before Execute is called.
+        // When used with xrmghost-framework-host, TargetEntity and PreImageEntity
+        // are populated automatically before Execute is called.
     }
 }
 ```
@@ -135,9 +132,9 @@ using Microsoft.Xrm.Sdk;
 [PluginExecutionConfigAttribute("account", "Create", "Update")]
 [PluginExecutionConfigAttribute("contact", "Create")]
 [PluginExecutionConfigAttribute("opportunity", "Update", "Delete")]
+[InputParameterAttribute("Target", "{ \"__entityName\": \"account\", \"accountid\": \"00000000-0000-0000-0000-000000000001\" }")]
 public class MultiEntityPlugin : IPlugin
 {
-    [InputParameterAttribute("Target", "{ \"__entityName\": \"account\", \"accountid\": \"00000000-0000-0000-0000-000000000001\" }")]
     public Entity TargetEntity { get; set; }
 
     public void Execute(IServiceProvider serviceProvider)
@@ -159,17 +156,15 @@ using XrmGhost.Attributes;
 using Microsoft.Xrm.Sdk;
 
 [PluginExecutionConfigAttribute("account", "Update")]
+[InputParameterAttribute("Target", "{ \"__entityName\": \"account\", \"accountid\": \"00000000-0000-0000-0000-000000000001\" }")]
+[PreImageAttribute("primary", "{ \"__entityName\": \"account\", \"name\": \"Old Name\", \"revenue\": 1000.00 }",
+    Attributes = new[] { "name", "accountid", "createdon", "revenue" })]
+[PostImageAttribute("updated", "{ \"__entityName\": \"account\", \"name\": \"New Name\", \"revenue\": 2000.00 }",
+    Attributes = new[] { "name", "modifiedon", "revenue" })]
 public class AccountUpdatePlugin : IPlugin
 {
-    [InputParameterAttribute("Target", "{ \"__entityName\": \"account\", \"accountid\": \"00000000-0000-0000-0000-000000000001\" }")]
     public Entity TargetEntity { get; set; }
-
-    [PreImageAttribute("primary", "{ \"__entityName\": \"account\", \"name\": \"Old Name\", \"revenue\": 1000.00 }",
-        Attributes = new[] { "name", "accountid", "createdon", "revenue" })]
     public Entity PreImageEntity { get; set; }
-
-    [PostImageAttribute("updated", "{ \"__entityName\": \"account\", \"name\": \"New Name\", \"revenue\": 2000.00 }",
-        Attributes = new[] { "name", "modifiedon", "revenue" })]
     public Entity PostImageEntity { get; set; }
 
     public void Execute(IServiceProvider serviceProvider) { }
@@ -186,9 +181,9 @@ using Microsoft.Xrm.Sdk;
     Stage = 20, Mode = 0,
     ImpersonatingUserId = "12345678-1234-1234-1234-123456789012")]
 [SolutionComponentAttribute("LeadManagement")]
+[InputParameterAttribute("Target", "{ \"__entityName\": \"lead\", \"leadid\": \"00000000-0000-0000-0000-000000000002\" }")]
 public class LeadProcessorPlugin : IPlugin
 {
-    [InputParameterAttribute("Target", "{ \"__entityName\": \"lead\", \"leadid\": \"00000000-0000-0000-0000-000000000002\" }")]
     public Entity TargetEntity { get; set; }
 
     public void Execute(IServiceProvider serviceProvider) { }
@@ -207,9 +202,9 @@ using Microsoft.Xrm.Sdk;
 [SolutionComponentAttribute("CoreCRM", IsDefault = true)]
 [SolutionComponentAttribute("SalesEnhancements")]
 [PluginExecutionConfigAttribute("opportunity", "Create", "Update", "Delete")]
+[InputParameterAttribute("Target", "{ \"__entityName\": \"opportunity\", \"opportunityid\": \"00000000-0000-0000-0000-000000000003\" }")]
 public class OpportunityPlugin : IPlugin
 {
-    [InputParameterAttribute("Target", "{ \"__entityName\": \"opportunity\", \"opportunityid\": \"00000000-0000-0000-0000-000000000003\" }")]
     public Entity TargetEntity { get; set; }
 
     public void Execute(IServiceProvider serviceProvider) { }
