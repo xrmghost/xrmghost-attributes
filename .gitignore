@@ -1,0 +1,53 @@
+# Visual Studio Code
+.vscode/
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Bb]in/
+[Oo]bj/
+
+# Rider
+.idea/
+
+# Mac
+.DS_Store
+
+# Packages
+/packages/*
+!/packages/repositories.config
+
+# Roslyn
+*.ruleset
+
+# Tools
+/tools/
+
+# Cache files
+*.nuget.props
+*.nuget.targets
+project.assets.json
+project.nuget.cache
+
+# Test results
+/TestResults/
+
+# Dotnet local tools
+.store/
+
+# General
+.clinerules/
+
+# Custom
+replacements.txt
+rebranding.ps1
+projectmemory.md
+tasks.md
+
+# Strong Name Key Files
+*.snk
+*.pub

@@ -1,0 +1,195 @@
+name: Publish NuGet Package
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-and-publish:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # Fetch all history for changelog generation if ever needed
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Setup Strong Name Signing
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          try {
+            # Create the strong name key file from GitHub secret
+            if ("${{ secrets.STRONG_NAME_KEY_FULL }}" -ne "") {
+              $keyBytes = [Convert]::FromBase64String("${{ secrets.STRONG_NAME_KEY_FULL }}")
+              [IO.File]::WriteAllBytes("XrmGhost.Attributes.snk", $keyBytes)
+              Write-Host "✅ Strong name key file created successfully"
+              
+              # Smart path discovery for sn.exe (future-proof against runner changes)
+              $knownPaths = @(
+                "C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools\sn.exe",
+                "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\sn.exe", 
+                "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\sn.exe",
+                "C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.7.2 Tools\sn.exe"
+              )
+              
+              $snPath = $null
+              foreach ($path in $knownPaths) {
+                if ($path -like "*\*\*") {
+                  # Handle wildcard paths
+                  $found = Get-ChildItem -Path $path -ErrorAction SilentlyContinue | Select-Object -First 1
+                  if ($found) { $snPath = $found.FullName; break }
+                } elseif (Test-Path $path) {
+                  $snPath = $path; break
+                }
+              }
+              
+              if (-not $snPath) {
+                # Fallback: targeted search in SDK directories only
+                Write-Host "🔍 Known paths not found, searching SDK directories..."
+                $snPath = Get-ChildItem -Recurse -Filter "sn.exe" -Path "C:\Program Files*\Microsoft SDKs", "C:\Program Files*\Windows Kits" -ErrorAction SilentlyContinue | Select-Object -First 1 | ForEach-Object { $_.FullName }
+              }
+              
+              if ($snPath) {
+                Write-Host "📍 Found sn.exe at: $snPath"
+                & $snPath -v XrmGhost.Attributes.snk
+                Write-Host "✅ Strong name key file verified"
+              } else {
+                Write-Warning "⚠️ sn.exe not found, skipping verification (signing will still work via MSBuild)"
+              }
+            } else {
+              Write-Warning "⚠️ STRONG_NAME_KEY_FULL secret not found - building without strong naming"
+            }
+          } catch {
+            Write-Warning "⚠️ Failed to setup strong name signing: $($_.Exception.Message)"
+            Write-Host "Building will continue without strong naming..."
+          }
+
+      - name: Get Version From Changelog
+        id: get_version
+        shell: pwsh
+        run: |
+          $changelog = Get-Content -Path CHANGELOG.md -Raw
+          # Regex to find the first version link like [1.0.1]
+          $match = [regex]::Match($changelog, '\[(\d+\.\d+\.\d+)\]')
+          if (-not $match.Success) {
+            Write-Error "❌ No version found in CHANGELOG.md matching the format [x.y.z]"
+            exit 1
+          }
+          $version = $match.Groups[1].Value
+          Write-Host "✅ Version found in changelog: $version"
+          echo "VERSION=$version" >> $env:GITHUB_ENV
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Find solution file
+        id: solution
+        run: |
+          $sln = Get-ChildItem -Filter *.sln | Select-Object -First 1
+          echo "solution=$($sln.Name)" >> $env:GITHUB_OUTPUT
+
+      - name: Update csproj version
+        shell: pwsh
+        run: |
+          $file = Get-ChildItem -Filter *.csproj | Select-Object -First 1
+          $version = "${{ steps.get_version.outputs.version }}"
+          Write-Host "Updating $($file.Name) to version $version"
+          $xml = [xml](Get-Content $file.FullName)
+          $xml.Project.PropertyGroup.VersionPrefix = $version
+          $xml.Project.PropertyGroup.AssemblyVersion = $version
+          $xml.Project.PropertyGroup.FileVersion = $version
+          $xml.Save($file.FullName)
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ steps.solution.outputs.solution }}
+
+      - name: Build solution
+        run: dotnet build ${{ steps.solution.outputs.solution }} -c Release --no-restore
+
+      - name: Pack solution
+        run: dotnet pack ${{ steps.solution.outputs.solution }} -c Release --no-build --output ./nupkg /p:PackageVersion=${{ steps.get_version.outputs.version }}
+
+      - name: Verify Strong Name Signing
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          try {
+            # Find the built assembly
+            $assembly = Get-ChildItem -Recurse -Filter "XrmGhost.Attributes.dll" -Path "./bin" | Select-Object -First 1
+            if ($assembly) {
+              # Smart path discovery for sn.exe (same as setup step)
+              $knownPaths = @(
+                "C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools\sn.exe",
+                "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\sn.exe", 
+                "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\sn.exe",
+                "C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.7.2 Tools\sn.exe"
+              )
+              
+              $snPath = $null
+              foreach ($path in $knownPaths) {
+                if ($path -like "*\*\*") {
+                  # Handle wildcard paths
+                  $found = Get-ChildItem -Path $path -ErrorAction SilentlyContinue | Select-Object -First 1
+                  if ($found) { $snPath = $found.FullName; break }
+                } elseif (Test-Path $path) {
+                  $snPath = $path; break
+                }
+              }
+              
+              if (-not $snPath) {
+                # Fallback: targeted search in SDK directories only
+                Write-Host "🔍 Known paths not found, searching SDK directories..."
+                $snPath = Get-ChildItem -Recurse -Filter "sn.exe" -Path "C:\Program Files*\Microsoft SDKs", "C:\Program Files*\Windows Kits" -ErrorAction SilentlyContinue | Select-Object -First 1 | ForEach-Object { $_.FullName }
+              }
+              
+              if ($snPath) {
+                Write-Host "🔍 Checking strong name signature on: $($assembly.FullName)"
+                Write-Host "📍 Using sn.exe at: $snPath"
+                $result = & $snPath -vf $assembly.FullName 2>&1
+                if ($LASTEXITCODE -eq 0) {
+                  Write-Host "✅ Assembly is successfully strong named!"
+                  Write-Host "$result"
+                } else {
+                  Write-Warning "⚠️ Assembly signing verification failed or assembly not signed"
+                  Write-Host "$result"
+                }
+              } else {
+                Write-Warning "⚠️ sn.exe not found, skipping verification (assembly may still be signed by MSBuild)"
+              }
+            } else {
+              Write-Warning "⚠️ Could not find built assembly for verification"
+            }
+          } catch {
+            Write-Warning "⚠️ Strong name verification failed: $($_.Exception.Message)"
+          }
+
+      - name: Cleanup Strong Name Key
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path "XrmGhost.Attributes.snk") {
+            Remove-Item "XrmGhost.Attributes.snk" -Force
+            Write-Host "🧹 Strong name key file cleaned up"
+          }
+
+      - name: Push to NuGet.org
+        shell: pwsh
+        run: |
+          dotnet nuget push ./nupkg/*.nupkg --source https://api.nuget.org/v3/index.json --api-key "${{ secrets.NUGET_API_KEY }}" --skip-duplicate
+
+      - name: Commit and Tag Version Bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add *.csproj
+          git commit -m "chore: Apply version ${{ env.VERSION }}" -m "Update .csproj to reflect version from CHANGELOG.md"
+          git tag v${{ env.VERSION }}
+          git push origin HEAD ; git push origin v${{ env.VERSION }}

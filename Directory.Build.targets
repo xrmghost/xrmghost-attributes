@@ -1,0 +1,6 @@
+<Project>
+  <!-- Prevent the main XrmGhost.Attributes project from compiling test files -->
+  <ItemGroup Condition="'$(IsTestProject)' != 'true'">
+    <Compile Remove="XrmGhost.Attributes.Tests/**" />
+  </ItemGroup>
+</Project>

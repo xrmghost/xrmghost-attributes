@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>8.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <!-- Also explicitly enable nullable context for the project -->
+    <Deterministic>false</Deterministic>
+    <AssemblyVersion>0.6.27</AssemblyVersion>
+    <FileVersion>0.6.27</FileVersion>
+    <VersionPrefix>0.6.27</VersionPrefix>
+    <!-- Strong Name Signing Configuration (conditional) -->
+    <SignAssembly Condition="Exists('XrmGhost.Attributes.snk')">true</SignAssembly>
+    <AssemblyOriginatorKeyFile Condition="Exists('XrmGhost.Attributes.snk')">XrmGhost.Attributes.snk</AssemblyOriginatorKeyFile>
+    <!-- usato per NuGet -->
+    <PackageId>XrmGhost.Attributes</PackageId>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <RepositoryUrl>https://github.com/xrmghost/xrmghost-attributes</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Description>Declarative .NET attributes for Dataverse plugin development in the XrmGhost ecosystem. Eliminates boilerplate configuration and execution context mapping for Power Platform plugins.</Description>
+    <Authors>XrmGhost</Authors>
+    <PackageTags>dataverse;xrm;dynamics365;powerplatform;plugin;crm;attributes;xrmghost</PackageTags>
+    <PackageProjectUrl>https://github.com/xrmghost/xrmghost-attributes</PackageProjectUrl>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="9.0.7" />
+    <None Include="README.md" Pack="true" PackagePath="" />
+    <None Include="LICENSE" Pack="true" PackagePath="" />
+  </ItemGroup>
+</Project>

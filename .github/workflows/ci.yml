@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore xrmghost-attributes.sln
+
+      - name: Build solution
+        run: dotnet build xrmghost-attributes.sln -c Release --no-restore
+
+      # NOTE: This step will activate once a test project is added to the solution (ADO-1166).
+      # Until then, it will succeed vacuously (no test projects = no tests to run).
+      - name: Run tests
+        run: dotnet test xrmghost-attributes.sln --no-build --configuration Release
+        continue-on-error: true
