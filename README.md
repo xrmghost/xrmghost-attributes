@@ -1,204 +1,255 @@
 # XrmGhost.Attributes
 
-**XrmGhost.Attributes** is a dedicated .NET library providing a set of custom attributes designed to streamline and simplify the development of plugins for Microsoft Dataverse. This package allows developers to use a declarative, attribute-based approach to define plugin configurations, message handling, and data context, reducing boilerplate code and improving maintainability.
+**XrmGhost.Attributes** is a .NET library of custom attributes for declarative Dataverse plugin development. Decorate your plugin classes with these attributes to declare execution context, message handling, entity images, input/output parameters, and configuration — without writing plumbing code.
 
-This library is a core component of the XrmGhost ecosystem and is now delivered as a standalone NuGet package to facilitate isolated and version-controlled development.
+The package targets **netstandard2.0** and has no runtime dependencies beyond the BCL, so it can be referenced by any Dataverse plugin project.
 
-## Overview
+**Current version:** `0.6.27`
 
-In traditional Dataverse plugin development, developers often write significant boilerplate code to handle input/output parameters, retrieve pre/post entity images, and manage secure/unsecure configurations. This library replaces that imperative code with a clean, declarative syntax.
+---
 
-By decorating your plugin classes and properties with these attributes, you can clearly define the plugin's execution context, making the code more readable, self-documenting, and easier to manage.
+## Table of Contents
 
-## Key Features
+1. [Standalone Use](#standalone-use)
+2. [XrmGhost Ecosystem](#xrmghost-ecosystem)
+3. [Installation](#installation)
+4. [Included Attributes](#included-attributes)
+5. [Usage Examples](#usage-examples)
+6. [Contributing](#contributing)
 
-- **Declarative Syntax:** Define plugin behavior with simple .NET attributes instead of complex code.
-- **Simplified Parameter Handling:** Automatically map input and output parameters to class properties using `[InputParameter]` and `[OutputParameter]`.
-- **Easy Image Retrieval:** Access Pre and Post entity images effortlessly with `[PreImage]` and `[PostImage]` attributes.
-- **Configuration Management:** Seamlessly inject secure and unsecure configurations via `[SecureConfiguration]` and `[UnsecureConfiguration]`.
-- **Message Specificity:** Clearly indicate which message your plugin handles with the `[HandlesMessage]` attribute.
-- **Reduced Boilerplate:** Focus on your business logic, not on the repetitive plumbing of plugin infrastructure.
+---
+
+## Standalone Use
+
+You can reference **XrmGhost.Attributes** in any Dataverse plugin project — no other XrmGhost component is required.
+
+The attributes are pure .NET attribute classes. Adding them to your plugin decorates the assembly with structured metadata that can be read at runtime or build time via reflection. On their own they impose **zero runtime overhead** inside the Dataverse sandbox: a `[PreImage]` or `[InputParameter]` attribute on a class does nothing unless something reads it.
+
+Typical standalone uses:
+
+- **Custom tooling.** Write a registration or scaffolding tool that reads attributes to automate plugin step registration.
+- **Documentation generation.** Produce an audit of all messages, entities, and images a plugin assembly handles, without parsing code.
+- **Test harnesses.** Read `[InputParameter]` and `[PreImage]` attributes to reconstruct a plausible `IPluginExecutionContext` in unit tests.
+
+---
+
+## XrmGhost Ecosystem
+
+Within the XrmGhost ecosystem this package is consumed by two components:
+
+### xrmghost-framework-host
+
+`xrmghost-framework-host` is a thin hosting layer that wraps plugin execution. At runtime it reads the attributes on a plugin class via reflection and automatically populates the corresponding properties before calling `Execute`. This removes the standard boilerplate of extracting `Target`, pre/post images, and configuration strings from `IPluginExecutionContext`.
+
+### xrmghost-cli — `generate-scenario`
+
+The `generate-scenario` command of the XrmGhost CLI introspects a plugin assembly and generates test scenario files. It uses the attribute values (entity JSON, parameter JSON, image aliases) as the starting data for each scenario.
+
+> **Note:** `generate-scenario` expects plugins to be decorated with XrmGhost.Attributes attributes. If the attributes are absent the CLI degrades gracefully with a warning, but no scenario data will be pre-populated.
+
+---
+
+## Installation
+
+### 1. Configure the GitHub Packages NuGet source
+
+`XrmGhost.Attributes` is published to **GitHub Packages**. You must add the source before installing:
+
+```bash
+dotnet nuget add source https://nuget.pkg.github.com/xrmghost/index.json \
+    --name github-xrmghost \
+    --username YOUR_GITHUB_USERNAME \
+    --password YOUR_GITHUB_PAT
+```
+
+Replace `YOUR_GITHUB_USERNAME` with your GitHub username and `YOUR_GITHUB_PAT` with a Personal Access Token that has the `read:packages` scope.
+
+### 2. Add the package
+
+```bash
+dotnet add package XrmGhost.Attributes --version 0.6.27
+```
+
+Or add the reference directly to your `.csproj`:
+
+```xml
+<PackageReference Include="XrmGhost.Attributes" Version="0.6.27" />
+```
+
+---
 
 ## Included Attributes
 
-This package provides the following attributes:
+| Attribute | Target | Description |
+|---|---|---|
+| `PluginExecutionConfigAttribute` | Class | Declares entity + messages the plugin handles; supports stage, mode, and impersonation. Repeatable. |
+| `HandlesMessageAttribute` | Class | Declares a single SDK message the plugin handles. Repeatable. |
+| `InputParameterAttribute` | Class | Declares an input parameter name and its default JSON value. Repeatable. |
+| `OutputParameterAttribute` | Class | Declares an expected output parameter name and its expected JSON value. Repeatable. |
+| `PreImageAttribute` | Class | Declares a pre-operation entity image alias and its JSON seed value. Repeatable. |
+| `PostImageAttribute` | Class | Declares a post-operation entity image alias and its JSON seed value. Repeatable. |
+| `SecureConfigurationAttribute` | Class | Declares the default secure configuration string. Single use. |
+| `UnsecureConfigurationAttribute` | Class | Declares the default unsecure configuration string. Single use. |
+| `SharedVariableAttribute` | Class | Declares a shared variable name and its default JSON value. Repeatable. |
+| `SolutionComponentAttribute` | Class | Declares which solution(s) the plugin should be registered in. Repeatable. |
 
-- `HandlesMessageAttribute`: Specifies the SDK message that the plugin will handle (e.g., "Create", "Update").
-- `InputParameterAttribute`: Maps a plugin's input parameter to a class property.
-- `OutputParameterAttribute`: Maps a plugin's output parameter to a class property.
-- `PluginExecutionConfigAttribute`: A general-purpose attribute for configuring plugin execution behavior, including user impersonation.
-- `PreImageAttribute`: Specifies that a property should be populated with the Pre-operation entity image, with optional column filtering.
-- `PostImageAttribute`: Specifies that a property should be populated with the Post-operation entity image, with optional column filtering.
-- `SecureConfigurationAttribute`: Injects the secure configuration string into a property.
-- `UnsecureConfigurationAttribute`: Injects the unsecure configuration string into a property.
-- `SharedVariableAttribute`: Manages shared variables within the plugin execution context.
-- `SolutionComponentAttribute`: Specifies which solution(s) the plugin component should be added to during automated registration.
+---
 
-## Getting Started
+## Usage Examples
 
-To use this library, add the `XrmGhost.Attributes` NuGet package to your Dataverse plugin project.
+All attributes live in the `XrmGhost.Attributes` namespace.
 
-```bash
-dotnet add package XrmGhost.Attributes
-```
-
-### Example Usage
-
-Here is a conceptual example of how you might use these attributes in a plugin class:
+### Basic plugin — single entity, multiple messages
 
 ```csharp
 using XrmGhost.Attributes;
+using Microsoft.Xrm.Sdk;
 
-// Example 1: Single entity with multiple messages
 [PluginExecutionConfigAttribute("account", "Create", "Update")]
-[PreImage("primary")]
+[PreImageAttribute("primary", "{ \"__entityName\": \"account\", \"accountid\": \"00000000-0000-0000-0000-000000000001\", \"name\": \"Old Name\" }")]
 public class AccountPlugin : IPlugin
 {
-    [InputParameter("Target")]
+    [InputParameterAttribute("Target", "{ \"__entityName\": \"account\", \"accountid\": \"00000000-0000-0000-0000-000000000001\" }")]
     public Entity TargetEntity { get; set; }
 
-    [PreImage("primary")]
+    [PreImageAttribute("primary", "{ \"__entityName\": \"account\", \"accountid\": \"00000000-0000-0000-0000-000000000001\", \"name\": \"Old Name\" }")]
     public Entity PreImageEntity { get; set; }
 
-    [UnsecureConfiguration]
-    public string MyConfigValue { get; set; }
+    [UnsecureConfigurationAttribute("{ \"featureFlag\": true }")]
+    public string ConfigValue { get; set; }
 
     public void Execute(IServiceProvider serviceProvider)
     {
-        // The XrmGhost framework will automatically populate the properties
-        // decorated with attributes before this method is called.
-
-        // Your business logic here...
-        // You can now directly use TargetEntity, PreImageEntity, and MyConfigValue.
+        // When used with xrmghost-framework-host, TargetEntity, PreImageEntity
+        // and ConfigValue are populated automatically before Execute is called.
     }
 }
+```
 
-// Example 2: Multiple entities with different configurations
+### Multiple entities and messages
+
+```csharp
+using XrmGhost.Attributes;
+using Microsoft.Xrm.Sdk;
+
 [PluginExecutionConfigAttribute("account", "Create", "Update")]
 [PluginExecutionConfigAttribute("contact", "Create")]
 [PluginExecutionConfigAttribute("opportunity", "Update", "Delete")]
 public class MultiEntityPlugin : IPlugin
 {
-    [InputParameter("Target")]
+    [InputParameterAttribute("Target", "{ \"__entityName\": \"account\", \"accountid\": \"00000000-0000-0000-0000-000000000001\" }")]
     public Entity TargetEntity { get; set; }
 
     public void Execute(IServiceProvider serviceProvider)
     {
-        // This plugin will be registered for:
-        // - Account: Create and Update messages
-        // - Contact: Create message only
-        // - Opportunity: Update and Delete messages
-    }
-}
-
-// Example 3: Entity registration without specific messages (applies to all messages)
-[PluginExecutionConfigAttribute("account")]
-public class AllMessagesPlugin : IPlugin
-{
-    [InputParameter("Target")]
-    public Entity TargetEntity { get; set; }
-
-    public void Execute(IServiceProvider serviceProvider)
-    {
-        // This plugin will be registered for all messages on the account entity
+        // Registered for:
+        //   Account   — Create, Update
+        //   Contact   — Create
+        //   Opportunity — Update, Delete
     }
 }
 ```
 
-### Enhanced Features Examples
+### Column-filtered entity images
+
+Filtering images to specific columns improves performance by reducing the payload transmitted to the plugin.
 
 ```csharp
 using XrmGhost.Attributes;
+using Microsoft.Xrm.Sdk;
 
-// Example 4: Column filtering for entity images
 [PluginExecutionConfigAttribute("account", "Update")]
-[SolutionComponent("CoreBusinessLogic", IsDefault = true)]
-[SolutionComponent("ExtendedFeatures")]
 public class AccountUpdatePlugin : IPlugin
 {
-    [InputParameter("Target")]
+    [InputParameterAttribute("Target", "{ \"__entityName\": \"account\", \"accountid\": \"00000000-0000-0000-0000-000000000001\" }")]
     public Entity TargetEntity { get; set; }
 
-    // Pre-image with specific columns only for better performance
-    [PreImage("primary", "{...json...}", Attributes = new[] { "name", "accountid", "createdon", "revenue" })]
+    [PreImageAttribute("primary", "{ \"__entityName\": \"account\", \"name\": \"Old Name\", \"revenue\": 1000.00 }",
+        Attributes = new[] { "name", "accountid", "createdon", "revenue" })]
     public Entity PreImageEntity { get; set; }
 
-    // Post-image with filtered columns
-    [PostImage("updated", "{...json...}", Attributes = new[] { "name", "modifiedon", "revenue" })]
+    [PostImageAttribute("updated", "{ \"__entityName\": \"account\", \"name\": \"New Name\", \"revenue\": 2000.00 }",
+        Attributes = new[] { "name", "modifiedon", "revenue" })]
     public Entity PostImageEntity { get; set; }
 
-    public void Execute(IServiceProvider serviceProvider)
-    {
-        // Business logic with optimized image retrieval
-    }
-}
-
-// Example 5: User impersonation for plugin registration
-[PluginExecutionConfigAttribute("lead", "Create", "Update", 
-    Stage = 20, Mode = 0, 
-    ImpersonatingUserId = "12345678-1234-1234-1234-123456789012")]
-[SolutionComponent("LeadManagement")]
-public class LeadProcessorPlugin : IPlugin
-{
-    [InputParameter("Target")]
-    public Entity TargetEntity { get; set; }
-
-    public void Execute(IServiceProvider serviceProvider)
-    {
-        // This plugin will run under the specified user context
-        // regardless of who triggers the operation
-    }
-}
-
-// Example 6: Multiple solutions with default priority
-[SolutionComponent("CoreCRM", IsDefault = true)]  // Primary solution
-[SolutionComponent("SalesEnhancements")]          // Additional solution
-[SolutionComponent("TestEnvironment")]            // Test deployment
-[PluginExecutionConfigAttribute("opportunity", "Create", "Update", "Delete")]
-public class OpportunityPlugin : IPlugin
-{
-    [InputParameter("Target")]
-    public Entity TargetEntity { get; set; }
-
-    public void Execute(IServiceProvider serviceProvider)
-    {
-        // Plugin will be added to multiple solutions
-        // with CoreCRM being the primary/default solution
-    }
-}
-
-// Example 7: Complex multi-entity plugin with all enhancements
-[PluginExecutionConfigAttribute("account", "Create", "Update", Stage = 20, Mode = 0)]
-[PluginExecutionConfigAttribute("contact", "Create", Stage = 20, Mode = 0, 
-    ImpersonatingUserId = "87654321-4321-4321-4321-210987654321")]
-[SolutionComponent("CustomerManagement", IsDefault = true)]
-[SolutionComponent("DataIntegration")]
-public class CustomerDataPlugin : IPlugin
-{
-    [InputParameter("Target")]
-    public Entity TargetEntity { get; set; }
-
-    [PreImage("primary", "{...json...}", 
-        Attributes = new[] { "name", "emailaddress1", "telephone1", "createdon" })]
-    public Entity PreImageEntity { get; set; }
-
-    [UnsecureConfiguration]
-    public string ConfigValue { get; set; }
-
-    public void Execute(IServiceProvider serviceProvider)
-    {
-        // Comprehensive plugin with:
-        // - Multi-entity registration
-        // - Column-filtered images
-        // - User impersonation for contact operations
-        // - Multi-solution deployment
-    }
+    public void Execute(IServiceProvider serviceProvider) { }
 }
 ```
 
-## Contributing
+### Stage, mode, and user impersonation
 
-This project is part of the larger XrmGhost ecosystem. For information on contributing, please refer to the main repository's contribution guidelines.
+```csharp
+using XrmGhost.Attributes;
+using Microsoft.Xrm.Sdk;
+
+[PluginExecutionConfigAttribute("lead", "Create", "Update",
+    Stage = 20, Mode = 0,
+    ImpersonatingUserId = "12345678-1234-1234-1234-123456789012")]
+[SolutionComponentAttribute("LeadManagement")]
+public class LeadProcessorPlugin : IPlugin
+{
+    [InputParameterAttribute("Target", "{ \"__entityName\": \"lead\", \"leadid\": \"00000000-0000-0000-0000-000000000002\" }")]
+    public Entity TargetEntity { get; set; }
+
+    public void Execute(IServiceProvider serviceProvider) { }
+}
+```
+
+`Stage` values: `10` PreValidation · `20` PreOperation · `40` PostOperation.  
+`Mode` values: `0` Synchronous · `1` Asynchronous.
+
+### Multiple solutions
+
+```csharp
+using XrmGhost.Attributes;
+using Microsoft.Xrm.Sdk;
+
+[SolutionComponentAttribute("CoreCRM", IsDefault = true)]
+[SolutionComponentAttribute("SalesEnhancements")]
+[PluginExecutionConfigAttribute("opportunity", "Create", "Update", "Delete")]
+public class OpportunityPlugin : IPlugin
+{
+    [InputParameterAttribute("Target", "{ \"__entityName\": \"opportunity\", \"opportunityid\": \"00000000-0000-0000-0000-000000000003\" }")]
+    public Entity TargetEntity { get; set; }
+
+    public void Execute(IServiceProvider serviceProvider) { }
+}
+```
+
+### Input and output parameters with shared variables
+
+```csharp
+using XrmGhost.Attributes;
+using Microsoft.Xrm.Sdk;
+
+[PluginExecutionConfigAttribute("none", "CalculatePrice")]
+[InputParameterAttribute("Quantity", "5")]
+[InputParameterAttribute("UnitPrice", "19.99")]
+[OutputParameterAttribute("TotalPrice", "99.95")]
+[SharedVariableAttribute("PricingRuleVersion", "\"v2\"")]
+public class CalculatePricePlugin : IPlugin
+{
+    public void Execute(IServiceProvider serviceProvider) { }
+}
+```
+
+### Secure and unsecure configuration
+
+```csharp
+using XrmGhost.Attributes;
+using Microsoft.Xrm.Sdk;
+
+[PluginExecutionConfigAttribute("account", "Create")]
+[SecureConfigurationAttribute("{ \"apiKey\": \"secret-value\" }")]
+[UnsecureConfigurationAttribute("{ \"endpoint\": \"https://example.com/api\" }")]
+public class ConfiguredPlugin : IPlugin
+{
+    public void Execute(IServiceProvider serviceProvider) { }
+}
+```
 
 ---
-*This README was generated as part of the project's migration to a standalone NuGet package.*
+
+## Contributing
+
+Contributions are welcome. Please refer to [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
