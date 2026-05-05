@@ -1,25 +1,20 @@
 name: Publish NuGet Package
 
 on:
-  workflow_dispatch:
-    inputs:
-      branch:
-        description: 'The branch to release from'
-        required: true
-        default: 'main'
+  push:
+    tags:
+      - 'v*.*.*'
 
 jobs:
   build-and-publish:
     runs-on: windows-latest
     permissions:
       contents: write
-      packages: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.branch }}
           # Fetch all history for changelog generation if ever needed
           fetch-depth: 0
 
@@ -78,9 +73,6 @@ jobs:
             Write-Warning "⚠️ Failed to setup strong name signing: $($_.Exception.Message)"
             Write-Host "Building will continue without strong naming..."
           }
-
-      - name: Set NuGet source
-        run: dotnet nuget add source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --name github --username ${{ github.actor }} --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text
 
       - name: Get Version From Changelog
         id: get_version
@@ -188,15 +180,10 @@ jobs:
             Write-Host "🧹 Strong name key file cleaned up"
           }
 
-      - name: Push to GitHub Packages
+      - name: Push to NuGet.org
         shell: pwsh
         run: |
-          $pkg = Get-ChildItem -Recurse -Filter *.nupkg | Select-Object -First 1
-          if ($pkg) {
-            dotnet nuget push "$($pkg.FullName)" --source "github" --api-key "${{ secrets.GITHUB_TOKEN }}" --skip-duplicate
-          } else {
-            Write-Error "❌ No .nupkg package found to publish."; exit 1
-          }
+          dotnet nuget push ./nupkg/*.nupkg --source https://api.nuget.org/v3/index.json --api-key "${{ secrets.NUGET_API_KEY }}" --skip-duplicate
 
       - name: Commit and Tag Version Bump
         run: |
@@ -205,4 +192,4 @@ jobs:
           git add *.csproj
           git commit -m "chore: Apply version ${{ env.VERSION }}" -m "Update .csproj to reflect version from CHANGELOG.md"
           git tag v${{ env.VERSION }}
-          git push origin ${{ github.event.inputs.branch }} ; git push origin v${{ env.VERSION }}
+          git push origin HEAD ; git push origin v${{ env.VERSION }}

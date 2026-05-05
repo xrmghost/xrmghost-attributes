@@ -1,0 +1,6 @@
+<Project>
+  <!-- Prevent the main XrmGhost.Attributes project from globbing into test subdirectories -->
+  <ItemGroup Condition="'$(IsTestProject)' != 'true'">
+    <Compile Remove="XrmGhost.Attributes.Tests/**" />
+  </ItemGroup>
+</Project>
