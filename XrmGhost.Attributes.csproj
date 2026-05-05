@@ -17,9 +17,14 @@
     <RepositoryUrl>https://github.com/xrmghost/xrmghost-attributes</RepositoryUrl>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Description>Declarative .NET attributes for Dataverse plugin development in the XrmGhost ecosystem. Eliminates boilerplate configuration and execution context mapping for Power Platform plugins.</Description>
+    <Authors>XrmGhost</Authors>
+    <PackageTags>dataverse;xrm;dynamics365;powerplatform;plugin;crm;attributes;xrmghost</PackageTags>
+    <PackageProjectUrl>https://github.com/xrmghost/xrmghost-attributes</PackageProjectUrl>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.Text.Json" Version="9.0.7" />
     <None Include="README.md" Pack="true" PackagePath="" />
+    <None Include="LICENSE" Pack="true" PackagePath="" />
   </ItemGroup>
 </Project>
