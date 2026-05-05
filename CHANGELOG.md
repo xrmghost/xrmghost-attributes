@@ -18,6 +18,16 @@ This library is published to **[NuGet.org](https://www.nuget.org/packages/XrmGho
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-05-05
+
+### Added
+
+- **First public release of XrmGhost.Attributes.** This release marks the first stable, intentional public API published to NuGet.org. All prior versions (0.6.25, 0.6.26, 0.6.27) were internal pre-public releases published only to GitHub Packages.
+- Consolidates all attributes developed during the pre-public phase: `PluginExecutionConfigAttribute`, `InputParameterAttribute`, `OutputParameterAttribute`, `SharedVariableAttribute`, `PreImageAttribute`, `PostImageAttribute`, `UnsecureConfigurationAttribute`, `SecureConfigurationAttribute`, `HandlesMessageAttribute`, `SolutionComponentAttribute`.
+- Strong name signing enabled for the assembly.
+- Full xUnit smoke test coverage included.
+- CI/CD pipeline configured for NuGet.org publication on tag push.
+
 ## [0.6.27] - 2025-09-04
 
 ### Added
