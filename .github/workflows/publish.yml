@@ -7,189 +7,170 @@ on:
 
 jobs:
   build-and-publish:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
+      id-token: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          # Fetch all history for changelog generation if ever needed
-          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
-      - name: Setup Strong Name Signing
-        continue-on-error: true
-        shell: pwsh
+      - name: Get version from changelog
+        id: version
+        shell: bash
         run: |
-          try {
-            # Create the strong name key file from GitHub secret
-            if ("${{ secrets.STRONG_NAME_KEY_FULL }}" -ne "") {
-              $keyBytes = [Convert]::FromBase64String("${{ secrets.STRONG_NAME_KEY_FULL }}")
-              [IO.File]::WriteAllBytes("XrmGhost.Attributes.snk", $keyBytes)
-              Write-Host "✅ Strong name key file created successfully"
-              
-              # Smart path discovery for sn.exe (future-proof against runner changes)
-              $knownPaths = @(
-                "C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools\sn.exe",
-                "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\sn.exe", 
-                "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\sn.exe",
-                "C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.7.2 Tools\sn.exe"
-              )
-              
-              $snPath = $null
-              foreach ($path in $knownPaths) {
-                if ($path -like "*\*\*") {
-                  # Handle wildcard paths
-                  $found = Get-ChildItem -Path $path -ErrorAction SilentlyContinue | Select-Object -First 1
-                  if ($found) { $snPath = $found.FullName; break }
-                } elseif (Test-Path $path) {
-                  $snPath = $path; break
-                }
-              }
-              
-              if (-not $snPath) {
-                # Fallback: targeted search in SDK directories only
-                Write-Host "🔍 Known paths not found, searching SDK directories..."
-                $snPath = Get-ChildItem -Recurse -Filter "sn.exe" -Path "C:\Program Files*\Microsoft SDKs", "C:\Program Files*\Windows Kits" -ErrorAction SilentlyContinue | Select-Object -First 1 | ForEach-Object { $_.FullName }
-              }
-              
-              if ($snPath) {
-                Write-Host "📍 Found sn.exe at: $snPath"
-                & $snPath -v XrmGhost.Attributes.snk
-                Write-Host "✅ Strong name key file verified"
-              } else {
-                Write-Warning "⚠️ sn.exe not found, skipping verification (signing will still work via MSBuild)"
-              }
-            } else {
-              Write-Warning "⚠️ STRONG_NAME_KEY_FULL secret not found - building without strong naming"
-            }
-          } catch {
-            Write-Warning "⚠️ Failed to setup strong name signing: $($_.Exception.Message)"
-            Write-Host "Building will continue without strong naming..."
-          }
+          version=$(python3 -c "import pathlib, re; content = pathlib.Path('CHANGELOG.md').read_text(encoding='utf-8'); match = re.search(r'\\[(\\d+\\.\\d+\\.\\d+)\\]', content); print(match.group(1) if match else '')")
 
-      - name: Get Version From Changelog
-        id: get_version
-        shell: pwsh
-        run: |
-          $changelog = Get-Content -Path CHANGELOG.md -Raw
-          # Regex to find the first version link like [1.0.1]
-          $match = [regex]::Match($changelog, '\[(\d+\.\d+\.\d+)\]')
-          if (-not $match.Success) {
-            Write-Error "❌ No version found in CHANGELOG.md matching the format [x.y.z]"
+          if [[ -z "$version" ]]; then
+            echo "No version found in CHANGELOG.md matching [x.y.z]" >&2
             exit 1
-          }
-          $version = $match.Groups[1].Value
-          Write-Host "✅ Version found in changelog: $version"
-          echo "VERSION=$version" >> $env:GITHUB_ENV
-          echo "version=$version" >> $env:GITHUB_OUTPUT
+          fi
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Verify tag matches changelog version
+        shell: bash
+        run: |
+          expected_tag="v${{ steps.version.outputs.version }}"
+
+          if [[ "$GITHUB_REF_NAME" != "$expected_tag" ]]; then
+            echo "Tag '$GITHUB_REF_NAME' does not match changelog version '$expected_tag'" >&2
+            exit 1
+          fi
 
       - name: Find solution file
         id: solution
+        shell: bash
         run: |
-          $sln = Get-ChildItem -Filter *.sln | Select-Object -First 1
-          echo "solution=$($sln.Name)" >> $env:GITHUB_OUTPUT
+          shopt -s nullglob
+          solutions=(*.sln)
 
-      - name: Update csproj version
-        shell: pwsh
+          if (( ${#solutions[@]} != 1 )); then
+            echo "Expected exactly one solution file, found ${#solutions[@]}" >&2
+            exit 1
+          fi
+
+          echo "path=${solutions[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup strong name key
+        shell: bash
+        env:
+          STRONG_NAME_KEY_FULL: ${{ secrets.STRONG_NAME_KEY_FULL }}
         run: |
-          $file = Get-ChildItem -Filter *.csproj | Select-Object -First 1
-          $version = "${{ steps.get_version.outputs.version }}"
-          Write-Host "Updating $($file.Name) to version $version"
-          $xml = [xml](Get-Content $file.FullName)
-          $xml.Project.PropertyGroup.VersionPrefix = $version
-          $xml.Project.PropertyGroup.AssemblyVersion = $version
-          $xml.Project.PropertyGroup.FileVersion = $version
-          $xml.Save($file.FullName)
+          if [[ -z "$STRONG_NAME_KEY_FULL" ]]; then
+            echo "STRONG_NAME_KEY_FULL secret is required for signed release builds" >&2
+            exit 1
+          fi
+
+          printf '%s' "$STRONG_NAME_KEY_FULL" | base64 --decode > XrmGhost.Attributes.snk
+
+      - name: Validate Trusted Publishing settings
+        shell: bash
+        env:
+          NUGET_PUBLISH_USER: ${{ secrets.NUGET_PUBLISH_USER }}
+        run: |
+          if [[ -z "$NUGET_PUBLISH_USER" ]]; then
+            echo "NUGET_PUBLISH_USER must be configured with the nuget.org profile name used for Trusted Publishing" >&2
+            exit 1
+          fi
 
       - name: Restore dependencies
-        run: dotnet restore ${{ steps.solution.outputs.solution }}
+        run: dotnet restore "${{ steps.solution.outputs.path }}"
 
       - name: Build solution
-        run: dotnet build ${{ steps.solution.outputs.solution }} -c Release --no-restore
+        run: >-
+          dotnet build "${{ steps.solution.outputs.path }}" -c Release --no-restore
+          /p:Version="${{ steps.version.outputs.version }}"
+          /p:VersionPrefix="${{ steps.version.outputs.version }}"
+          /p:AssemblyVersion="${{ steps.version.outputs.version }}"
+          /p:FileVersion="${{ steps.version.outputs.version }}"
 
       - name: Pack solution
-        run: dotnet pack ${{ steps.solution.outputs.solution }} -c Release --no-build --output ./nupkg /p:PackageVersion=${{ steps.get_version.outputs.version }}
+        run: >-
+          dotnet pack "${{ steps.solution.outputs.path }}" -c Release --no-build --output ./nupkg
+          /p:PackageVersion="${{ steps.version.outputs.version }}"
 
-      - name: Verify Strong Name Signing
-        continue-on-error: true
+      - name: Verify signed assembly metadata
         shell: pwsh
         run: |
+          $assembly = Get-ChildItem -Path ./bin/Release -Recurse -Filter XrmGhost.Attributes.dll | Select-Object -First 1
+
+          if (-not $assembly) {
+            throw 'Could not find XrmGhost.Attributes.dll under ./bin/Release'
+          }
+
+          $assemblyName = [System.Reflection.AssemblyName]::GetAssemblyName($assembly.FullName)
+          $publicKey = $assemblyName.GetPublicKey()
+          $publicKeyToken = $assemblyName.GetPublicKeyToken()
+
+          if (-not $publicKey -or $publicKey.Length -eq 0) {
+            throw "Assembly '$($assembly.FullName)' does not contain a public key"
+          }
+
+          if (-not $publicKeyToken -or $publicKeyToken.Length -eq 0) {
+            throw "Assembly '$($assembly.FullName)' does not contain a public key token"
+          }
+
+          $tokenHex = -join ($publicKeyToken | ForEach-Object { $_.ToString('x2') })
+          Write-Host "Signed assembly verified: $($assembly.FullName)"
+          Write-Host "Assembly version: $($assemblyName.Version)"
+          Write-Host "Public key token: $tokenHex"
+
+      - name: Locate package
+        id: package
+        shell: bash
+        run: |
+          shopt -s nullglob
+          packages=(./nupkg/*.nupkg)
+
+          if (( ${#packages[@]} != 1 )); then
+            echo "Expected exactly one package in ./nupkg, found ${#packages[@]}" >&2
+            exit 1
+          fi
+
+          echo "package_path=${packages[0]}" >> "$GITHUB_OUTPUT"
+
+      - name: Verify package contains library assembly
+        shell: pwsh
+        run: |
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+          $packagePath = '${{ steps.package.outputs.package_path }}'
+          $zip = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path $packagePath))
+
           try {
-            # Find the built assembly
-            $assembly = Get-ChildItem -Recurse -Filter "XrmGhost.Attributes.dll" -Path "./bin" | Select-Object -First 1
-            if ($assembly) {
-              # Smart path discovery for sn.exe (same as setup step)
-              $knownPaths = @(
-                "C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.8 Tools\sn.exe",
-                "C:\Program Files (x86)\Windows Kits\10\bin\*\x64\sn.exe", 
-                "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\sn.exe",
-                "C:\Program Files (x86)\Microsoft SDKs\Windows\v10.0A\bin\NETFX 4.7.2 Tools\sn.exe"
-              )
-              
-              $snPath = $null
-              foreach ($path in $knownPaths) {
-                if ($path -like "*\*\*") {
-                  # Handle wildcard paths
-                  $found = Get-ChildItem -Path $path -ErrorAction SilentlyContinue | Select-Object -First 1
-                  if ($found) { $snPath = $found.FullName; break }
-                } elseif (Test-Path $path) {
-                  $snPath = $path; break
-                }
-              }
-              
-              if (-not $snPath) {
-                # Fallback: targeted search in SDK directories only
-                Write-Host "🔍 Known paths not found, searching SDK directories..."
-                $snPath = Get-ChildItem -Recurse -Filter "sn.exe" -Path "C:\Program Files*\Microsoft SDKs", "C:\Program Files*\Windows Kits" -ErrorAction SilentlyContinue | Select-Object -First 1 | ForEach-Object { $_.FullName }
-              }
-              
-              if ($snPath) {
-                Write-Host "🔍 Checking strong name signature on: $($assembly.FullName)"
-                Write-Host "📍 Using sn.exe at: $snPath"
-                $result = & $snPath -vf $assembly.FullName 2>&1
-                if ($LASTEXITCODE -eq 0) {
-                  Write-Host "✅ Assembly is successfully strong named!"
-                  Write-Host "$result"
-                } else {
-                  Write-Warning "⚠️ Assembly signing verification failed or assembly not signed"
-                  Write-Host "$result"
-                }
-              } else {
-                Write-Warning "⚠️ sn.exe not found, skipping verification (assembly may still be signed by MSBuild)"
-              }
-            } else {
-              Write-Warning "⚠️ Could not find built assembly for verification"
+            $libraryEntry = $zip.Entries | Where-Object { $_.FullName -like 'lib/*/XrmGhost.Attributes.dll' } | Select-Object -First 1
+
+            if (-not $libraryEntry) {
+              throw "Package '$packagePath' does not contain XrmGhost.Attributes.dll under lib/"
             }
-          } catch {
-            Write-Warning "⚠️ Strong name verification failed: $($_.Exception.Message)"
+
+            Write-Host "Package verified: $($libraryEntry.FullName)"
+          }
+          finally {
+            $zip.Dispose()
           }
 
-      - name: Cleanup Strong Name Key
-        if: always()
-        shell: pwsh
-        run: |
-          if (Test-Path "XrmGhost.Attributes.snk") {
-            Remove-Item "XrmGhost.Attributes.snk" -Force
-            Write-Host "🧹 Strong name key file cleaned up"
-          }
+      - name: NuGet login with Trusted Publishing
+        id: nuget_login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_PUBLISH_USER }}
 
       - name: Push to NuGet.org
-        shell: pwsh
-        run: |
-          dotnet nuget push ./nupkg/*.nupkg --source https://api.nuget.org/v3/index.json --api-key "${{ secrets.NUGET_API_KEY }}" --skip-duplicate
+        run: >-
+          dotnet nuget push "${{ steps.package.outputs.package_path }}"
+          --api-key "${{ steps.nuget_login.outputs.NUGET_API_KEY }}"
+          --source https://api.nuget.org/v3/index.json
+          --skip-duplicate
 
-      - name: Commit and Tag Version Bump
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add *.csproj
-          git commit -m "chore: Apply version ${{ env.VERSION }}" -m "Update .csproj to reflect version from CHANGELOG.md"
-          git tag v${{ env.VERSION }}
-          git push origin HEAD ; git push origin v${{ env.VERSION }}
+      - name: Cleanup strong name key
+        if: always()
+        shell: bash
+        run: rm -f XrmGhost.Attributes.snk

@@ -10,11 +10,11 @@ This library is published to **[NuGet.org](https://www.nuget.org/packages/XrmGho
 
 **Publication trigger:** The publish workflow runs automatically when a Git tag matching the pattern `v*.*.*` is pushed to the repository (e.g., `git tag v1.0.0 && git push origin v1.0.0`).
 
-**Version source:** The version number is extracted from the first `[x.y.z]` entry in this `CHANGELOG.md` file and applied to the `.csproj` before packing. The pushed tag and the CHANGELOG version must match.
+**Version source:** The version number is extracted from the first `[x.y.z]` entry in this `CHANGELOG.md` file and applied during the release build. The pushed tag and the CHANGELOG version must match.
 
 **First public release:** The first tag pushed to nuget.org will be `v1.0.0`. Prior versions (0.6.25, 0.6.26, 0.6.27) were published only to GitHub Packages and are considered pre-public internal releases. Versioning restarts from `1.0.0` for the first public NuGet.org release to signal a stable, intentional public API.
 
-**Prerequisite:** The `NUGET_API_KEY` secret must be configured in the GitHub repository settings before pushing the first `v*.*.*` tag.
+**Prerequisites:** Before pushing the first `v*.*.*` tag, configure a nuget.org **Trusted Publishing** policy for this repository and workflow file (`publish.yml`), add the `STRONG_NAME_KEY_FULL` secret for release signing, and set `NUGET_PUBLISH_USER` to the nuget.org profile name used for the Trusted Publishing login step.
 
 ## [Unreleased]
 
