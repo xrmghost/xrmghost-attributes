@@ -18,6 +18,13 @@ This library is published to **[NuGet.org](https://www.nuget.org/packages/XrmGho
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-05-07
+
+### Fixed
+
+- Updated the NuGet publish workflow to use Linux-based Trusted Publishing via OIDC, replacing the previous Windows/API-key release flow that failed during tag-triggered releases.
+- Removed the tag self-mutation behavior from the publish workflow and made package discovery/signing validation deterministic for release runs.
+
 ## [1.0.0] - 2026-05-05
 
 ### Added
