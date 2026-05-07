@@ -12,9 +12,7 @@ This library is published to **[NuGet.org](https://www.nuget.org/packages/XrmGho
 
 **Version source:** The version number is extracted from the first `[x.y.z]` entry in this `CHANGELOG.md` file and applied during the release build. The pushed tag and the CHANGELOG version must match.
 
-**First public release:** The first tag pushed to nuget.org will be `v1.0.0`. Prior versions (0.6.25, 0.6.26, 0.6.27) were published only to GitHub Packages and are considered pre-public internal releases. Versioning restarts from `1.0.0` for the first public NuGet.org release to signal a stable, intentional public API.
-
-**Prerequisites:** Before pushing the first `v*.*.*` tag, configure a nuget.org **Trusted Publishing** policy for this repository and workflow file (`publish.yml`), add the `STRONG_NAME_KEY_FULL` secret for release signing, and set `NUGET_PUBLISH_USER` to the nuget.org profile name used for the Trusted Publishing login step.
+**First public release:** The first tag pushed to nuget.org was `v1.0.0`, marking the first stable public release of this package.
 
 ## [Unreleased]
 
@@ -22,14 +20,14 @@ This library is published to **[NuGet.org](https://www.nuget.org/packages/XrmGho
 
 ### Fixed
 
-- Updated the NuGet publish workflow to use Linux-based Trusted Publishing via OIDC, replacing the previous Windows/API-key release flow that failed during tag-triggered releases.
+- Updated the NuGet publish workflow to improve reliability for tag-triggered releases.
 - Removed the tag self-mutation behavior from the publish workflow and made package discovery/signing validation deterministic for release runs.
 
 ## [1.0.0] - 2026-05-05
 
 ### Added
 
-- **First public release of XrmGhost.Attributes.** This release marks the first stable, intentional public API published to NuGet.org. All prior versions (0.6.25, 0.6.26, 0.6.27) were internal pre-public releases published only to GitHub Packages.
+- **First public release of XrmGhost.Attributes.** This release marks the first stable public API published to NuGet.org.
 - Consolidates all attributes developed during the pre-public phase: `PluginExecutionConfigAttribute`, `InputParameterAttribute`, `OutputParameterAttribute`, `SharedVariableAttribute`, `PreImageAttribute`, `PostImageAttribute`, `UnsecureConfigurationAttribute`, `SecureConfigurationAttribute`, `HandlesMessageAttribute`, `SolutionComponentAttribute`.
 - Strong name signing enabled for the assembly.
 - Full xUnit smoke test coverage included.
