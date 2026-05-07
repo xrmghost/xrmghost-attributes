@@ -16,6 +16,13 @@ This library is published to **[NuGet.org](https://www.nuget.org/packages/XrmGho
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-05-07
+
+### Changed
+
+- Removed internal swarm notes and the strong-name setup guide from the public repository.
+- Kept the cleanup scoped to repository documentation only, with no source or workflow behavior changes.
+
 ## [1.0.1] - 2026-05-07
 
 ### Fixed
