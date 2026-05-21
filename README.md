@@ -4,7 +4,8 @@
 
 The package targets **netstandard2.0** and has no runtime dependencies beyond the BCL, so it can be referenced by any Dataverse plugin project.
 
-See the [Releases](https://github.com/xrmghost/xrmghost-attributes/releases) page for current and past versions.
+- **Documentation:** [https://docs.xrmghost.tech](https://docs.xrmghost.tech)
+- **Releases:** [GitHub Releases](https://github.com/xrmghost/xrmghost-attributes/releases)
 
 ---
 
