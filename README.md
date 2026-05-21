@@ -1,5 +1,13 @@
 # XrmGhost.Attributes
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./assets/XG_Audiowide_transparent_negative.svg">
+    <source media="(prefers-color-scheme: light)" srcset="./assets/XG_Audiowide_transparent.svg">
+    <img alt="Xrm Ghost" src="./assets/XG_Audiowide_transparent_negative.svg" width="300" />
+  </picture>
+</p>
+
 **XrmGhost.Attributes** is a .NET library of custom attributes for declarative Dataverse plugin development. Decorate your plugin classes with these attributes to declare execution context, message handling, entity images, input/output parameters, and configuration — without writing plumbing code.
 
 The package targets **netstandard2.0** and has no runtime dependencies beyond the BCL, so it can be referenced by any Dataverse plugin project.
