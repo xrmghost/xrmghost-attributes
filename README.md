@@ -4,7 +4,7 @@
 
 The package targets **netstandard2.0** and has no runtime dependencies beyond the BCL, so it can be referenced by any Dataverse plugin project.
 
-**Current version:** `0.6.27`
+See the [Releases](https://github.com/xrmghost/xrmghost-attributes/releases) page for current and past versions.
 
 ---
 
@@ -51,29 +51,16 @@ The `generate-scenario` command of the XrmGhost CLI introspects a plugin assembl
 
 ## Installation
 
-### 1. Configure the GitHub Packages NuGet source
-
-`XrmGhost.Attributes` is published to **GitHub Packages**. You must add the source before installing:
+Install the package from NuGet:
 
 ```bash
-dotnet nuget add source https://nuget.pkg.github.com/xrmghost/index.json \
-    --name github-xrmghost \
-    --username YOUR_GITHUB_USERNAME \
-    --password YOUR_GITHUB_PAT
-```
-
-Replace `YOUR_GITHUB_USERNAME` with your GitHub username and `YOUR_GITHUB_PAT` with a Personal Access Token that has the `read:packages` scope.
-
-### 2. Add the package
-
-```bash
-dotnet add package XrmGhost.Attributes --version 0.6.27
+dotnet add package XrmGhost.Attributes
 ```
 
 Or add the reference directly to your `.csproj`:
 
 ```xml
-<PackageReference Include="XrmGhost.Attributes" Version="0.6.27" />
+<PackageReference Include="XrmGhost.Attributes" />
 ```
 
 ---
