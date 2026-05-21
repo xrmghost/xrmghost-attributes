@@ -103,9 +103,9 @@ All attributes live in the `XrmGhost.Attributes` namespace.
 using XrmGhost.Attributes;
 using Microsoft.Xrm.Sdk;
 
-[PluginExecutionConfigAttribute("account", "Create", "Update")]
-[PreImageAttribute("primary", "{ \"__entityName\": \"account\", \"accountid\": \"00000000-0000-0000-0000-000000000001\", \"name\": \"Old Name\" }")]
-[InputParameterAttribute("Target", "{ \"__entityName\": \"account\", \"accountid\": \"00000000-0000-0000-0000-000000000001\" }")]
+[PluginExecutionConfig("account", "Create", "Update")]
+[PreImage("primary", "{ \"__entityName\": \"account\", \"accountid\": \"00000000-0000-0000-0000-000000000001\", \"name\": \"Old Name\" }")]
+[InputParameter("Target", "{ \"__entityName\": \"account\", \"accountid\": \"00000000-0000-0000-0000-000000000001\" }")]
 public class AccountPlugin : IPlugin
 {
     public Entity TargetEntity { get; set; }
@@ -125,10 +125,10 @@ public class AccountPlugin : IPlugin
 using XrmGhost.Attributes;
 using Microsoft.Xrm.Sdk;
 
-[PluginExecutionConfigAttribute("account", "Create", "Update")]
-[PluginExecutionConfigAttribute("contact", "Create")]
-[PluginExecutionConfigAttribute("opportunity", "Update", "Delete")]
-[InputParameterAttribute("Target", "{ \"__entityName\": \"account\", \"accountid\": \"00000000-0000-0000-0000-000000000001\" }")]
+[PluginExecutionConfig("account", "Create", "Update")]
+[PluginExecutionConfig("contact", "Create")]
+[PluginExecutionConfig("opportunity", "Update", "Delete")]
+[InputParameter("Target", "{ \"__entityName\": \"account\", \"accountid\": \"00000000-0000-0000-0000-000000000001\" }")]
 public class MultiEntityPlugin : IPlugin
 {
     public Entity TargetEntity { get; set; }
@@ -151,11 +151,11 @@ Filtering images to specific columns improves performance by reducing the payloa
 using XrmGhost.Attributes;
 using Microsoft.Xrm.Sdk;
 
-[PluginExecutionConfigAttribute("account", "Update")]
-[InputParameterAttribute("Target", "{ \"__entityName\": \"account\", \"accountid\": \"00000000-0000-0000-0000-000000000001\" }")]
-[PreImageAttribute("primary", "{ \"__entityName\": \"account\", \"name\": \"Old Name\", \"revenue\": 1000.00 }",
+[PluginExecutionConfig("account", "Update")]
+[InputParameter("Target", "{ \"__entityName\": \"account\", \"accountid\": \"00000000-0000-0000-0000-000000000001\" }")]
+[PreImage("primary", "{ \"__entityName\": \"account\", \"name\": \"Old Name\", \"revenue\": 1000.00 }",
     Attributes = new[] { "name", "accountid", "createdon", "revenue" })]
-[PostImageAttribute("updated", "{ \"__entityName\": \"account\", \"name\": \"New Name\", \"revenue\": 2000.00 }",
+[PostImage("updated", "{ \"__entityName\": \"account\", \"name\": \"New Name\", \"revenue\": 2000.00 }",
     Attributes = new[] { "name", "modifiedon", "revenue" })]
 public class AccountUpdatePlugin : IPlugin
 {
@@ -173,11 +173,11 @@ public class AccountUpdatePlugin : IPlugin
 using XrmGhost.Attributes;
 using Microsoft.Xrm.Sdk;
 
-[PluginExecutionConfigAttribute("lead", "Create", "Update",
+[PluginExecutionConfig("lead", "Create", "Update",
     Stage = 20, Mode = 0,
     ImpersonatingUserId = "12345678-1234-1234-1234-123456789012")]
-[SolutionComponentAttribute("LeadManagement")]
-[InputParameterAttribute("Target", "{ \"__entityName\": \"lead\", \"leadid\": \"00000000-0000-0000-0000-000000000002\" }")]
+[SolutionComponent("LeadManagement")]
+[InputParameter("Target", "{ \"__entityName\": \"lead\", \"leadid\": \"00000000-0000-0000-0000-000000000002\" }")]
 public class LeadProcessorPlugin : IPlugin
 {
     public Entity TargetEntity { get; set; }
@@ -195,10 +195,10 @@ public class LeadProcessorPlugin : IPlugin
 using XrmGhost.Attributes;
 using Microsoft.Xrm.Sdk;
 
-[SolutionComponentAttribute("CoreCRM", IsDefault = true)]
-[SolutionComponentAttribute("SalesEnhancements")]
-[PluginExecutionConfigAttribute("opportunity", "Create", "Update", "Delete")]
-[InputParameterAttribute("Target", "{ \"__entityName\": \"opportunity\", \"opportunityid\": \"00000000-0000-0000-0000-000000000003\" }")]
+[SolutionComponent("CoreCRM", IsDefault = true)]
+[SolutionComponent("SalesEnhancements")]
+[PluginExecutionConfig("opportunity", "Create", "Update", "Delete")]
+[InputParameter("Target", "{ \"__entityName\": \"opportunity\", \"opportunityid\": \"00000000-0000-0000-0000-000000000003\" }")]
 public class OpportunityPlugin : IPlugin
 {
     public Entity TargetEntity { get; set; }
@@ -213,11 +213,11 @@ public class OpportunityPlugin : IPlugin
 using XrmGhost.Attributes;
 using Microsoft.Xrm.Sdk;
 
-[PluginExecutionConfigAttribute("none", "CalculatePrice")]
-[InputParameterAttribute("Quantity", "5")]
-[InputParameterAttribute("UnitPrice", "19.99")]
-[OutputParameterAttribute("TotalPrice", "99.95")]
-[SharedVariableAttribute("PricingRuleVersion", "\"v2\"")]
+[PluginExecutionConfig("none", "CalculatePrice")]
+[InputParameter("Quantity", "5")]
+[InputParameter("UnitPrice", "19.99")]
+[OutputParameter("TotalPrice", "99.95")]
+[SharedVariable("PricingRuleVersion", "\"v2\"")]
 public class CalculatePricePlugin : IPlugin
 {
     public void Execute(IServiceProvider serviceProvider) { }
@@ -230,9 +230,9 @@ public class CalculatePricePlugin : IPlugin
 using XrmGhost.Attributes;
 using Microsoft.Xrm.Sdk;
 
-[PluginExecutionConfigAttribute("account", "Create")]
-[SecureConfigurationAttribute("{ \"apiKey\": \"secret-value\" }")]
-[UnsecureConfigurationAttribute("{ \"endpoint\": \"https://example.com/api\" }")]
+[PluginExecutionConfig("account", "Create")]
+[SecureConfiguration("{ \"apiKey\": \"secret-value\" }")]
+[UnsecureConfiguration("{ \"endpoint\": \"https://example.com/api\" }")]
 public class ConfiguredPlugin : IPlugin
 {
     public void Execute(IServiceProvider serviceProvider) { }
