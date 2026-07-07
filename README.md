@@ -12,8 +12,11 @@
 
 The package targets **netstandard2.0** and has no runtime dependencies beyond the BCL, so it can be referenced by any Dataverse plugin project.
 
-- **Documentation:** [https://docs.xrmghost.tech](https://docs.xrmghost.tech)
+- **Documentation:** [Attributes reference](https://docs.xrmghost.tech/attributes/)
+- **Source:** [xrmghost-attributes on GitHub](https://github.com/xrmghost/xrmghost-attributes)
 - **Releases:** [GitHub Releases](https://github.com/xrmghost/xrmghost-attributes/releases)
+
+> **Package metadata note:** this package's NuGet listing points to the documentation above as of this revision. The corrected metadata is only observable on a newly published NuGet version — historical versions of `XrmGhost.Attributes` already on nuget.org cannot be changed retroactively.
 
 ---
 

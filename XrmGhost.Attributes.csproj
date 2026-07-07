@@ -20,7 +20,7 @@
     <Description>Declarative .NET attributes for Dataverse plugin development in the XrmGhost ecosystem. Eliminates boilerplate configuration and execution context mapping for Power Platform plugins.</Description>
     <Authors>XrmGhost</Authors>
     <PackageTags>dataverse;xrm;dynamics365;powerplatform;plugin;crm;attributes;xrmghost</PackageTags>
-    <PackageProjectUrl>https://github.com/xrmghost/xrmghost-attributes</PackageProjectUrl>
+    <PackageProjectUrl>https://docs.xrmghost.tech/attributes/</PackageProjectUrl>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="System.Text.Json" Version="9.0.7" />
