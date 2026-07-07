@@ -18,6 +18,15 @@ The package targets **netstandard2.0** and has no runtime dependencies beyond th
 
 > **Package metadata note:** this package's NuGet listing points to the documentation above as of this revision. The corrected metadata is only observable on a newly published NuGet version — historical versions of `XrmGhost.Attributes` already on nuget.org cannot be changed retroactively.
 
+**Part of the XrmGhost suite:**
+
+- **Website:** [www.xrmghost.tech](https://www.xrmghost.tech) — product overview, pricing, and getting-started guides.
+- **Suite home:** [xrmghost/xrmghost](https://github.com/xrmghost/xrmghost) — the umbrella repo tying together the CLI, hosts, and supporting libraries this package plugs into.
+- **Companion tooling:** [xrmghost-skills](https://github.com/xrmghost/xrmghost-skills) — reusable automation skills built on top of the XrmGhost stack.
+- **Docs source:** [xrmghost-docs](https://github.com/xrmghost/xrmghost-docs) — the repo behind the documentation site linked above.
+
+> **Note on NuGet rendering:** this section is part of the same README rendered on both GitHub and the NuGet package page. On NuGet it only reflects the state as of the next published version (`v1.0.4`); the historical NuGet page for earlier versions is unaffected.
+
 ---
 
 ## Table of Contents
