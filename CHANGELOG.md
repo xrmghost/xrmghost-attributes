@@ -16,6 +16,13 @@ This library is published to **[NuGet.org](https://www.nuget.org/packages/XrmGho
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-07-07
+
+### Changed
+
+- Corrected `PackageProjectUrl` to point to `https://docs.xrmghost.tech/attributes/`.
+- Refreshed `README.md` with differentiated first-party backlinks to distinguish the dual repo/NuGet surface.
+
 ## [1.0.2] - 2026-05-07
 
 ### Changed
