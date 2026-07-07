@@ -16,6 +16,12 @@ This library is published to **[NuGet.org](https://www.nuget.org/packages/XrmGho
 
 ## [Unreleased]
 
+## [1.0.4] - 2026-07-07
+
+### Changed
+
+- Added README backlinks to `www.xrmghost.tech`, the base `xrmghost` repository, and the `xrmghost-skills` and `xrmghost-docs` sibling repositories.
+
 ## [1.0.3] - 2026-07-07
 
 ### Changed
