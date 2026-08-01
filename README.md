@@ -25,7 +25,7 @@ The package targets **netstandard2.0** and has no runtime dependencies beyond th
 - **Companion tooling:** [xrmghost-skills](https://github.com/xrmghost/xrmghost-skills) — reusable automation skills built on top of the XrmGhost stack.
 - **Docs source:** [xrmghost-docs](https://github.com/xrmghost/xrmghost-docs) — the repo behind the documentation site linked above.
 
-> **Note on NuGet rendering:** this section is part of the same README rendered on both GitHub and the NuGet package page. On NuGet it only reflects the state as of the next published version (`v1.0.4`); the historical NuGet page for earlier versions is unaffected.
+> **Note on NuGet rendering:** this section is part of the same README rendered on both GitHub and the NuGet package page. On NuGet it only reflects the state as of the next published version (`v1.1.0`); the historical NuGet page for earlier versions is unaffected.
 
 ---
 
@@ -92,7 +92,7 @@ All attributes target **`AttributeTargets.Class`** — they must be placed on th
 
 | Attribute | Description |
 |---|---|
-| `PluginExecutionConfigAttribute` | Declares entity + messages the plugin handles; supports stage, mode, and impersonation. Repeatable. |
+| `PluginExecutionConfigAttribute` | Declares entity + messages the plugin handles; supports stage, mode, impersonation, and Update filtering attributes. Repeatable. |
 | `HandlesMessageAttribute` | Declares a single SDK message the plugin handles. Repeatable. |
 | `InputParameterAttribute` | Declares an input parameter name and its default JSON value. Repeatable. |
 | `OutputParameterAttribute` | Declares an expected output parameter name and its expected JSON value. Repeatable. |
@@ -178,6 +178,50 @@ public class AccountUpdatePlugin : IPlugin
     public void Execute(IServiceProvider serviceProvider) { }
 }
 ```
+
+### Filtering attributes (Update steps)
+
+`PluginExecutionConfigAttribute.FilteringAttributes` declares the columns whose change should trigger the step. Restricting the trigger set is the single most effective way to stop an Update plugin from firing on every unrelated write.
+
+```csharp
+using XrmGhost.Attributes;
+using Microsoft.Xrm.Sdk;
+
+[PluginExecutionConfig("account", "Update",
+    Stage = 40, Mode = 0,
+    FilteringAttributes = new[] { "name", "revenue" })]
+[InputParameter("Target", "{ \"__entityName\": \"account\", \"accountid\": \"00000000-0000-0000-0000-000000000001\" }")]
+public class AccountRevenuePlugin : IPlugin
+{
+    public Entity TargetEntity { get; set; }
+
+    public void Execute(IServiceProvider serviceProvider) { }
+}
+```
+
+**Semantics — read this before consuming the property:**
+
+- **`null` and empty array are equivalent.** Both mean "no filtering attributes"; the step fires for any changed column. Downstream registrars must map both to a Dataverse `filteringattributes` value of `null`, never an empty string. This keeps upgrades from earlier package versions a no-op.
+- **Update only.** Filtering attributes are meaningful only for the `Update` message. If a configuration lists other messages (`Create`, `Delete`, …), downstream registrars **must ignore** `FilteringAttributes` for those messages and register them unfiltered. Declare a separate `[PluginExecutionConfig]` per message when only the Update step should be filtered:
+
+  ```csharp
+  [PluginExecutionConfig("account", "Create")]
+  [PluginExecutionConfig("account", "Update", FilteringAttributes = new[] { "name", "revenue" })]
+  public class AccountPlugin : IPlugin { /* ... */ }
+  ```
+
+- **The attribute stores values verbatim.** Source order, casing, and duplicates are preserved exactly as declared. The attribute performs no normalization and no message-dependent validation.
+
+**Canonical serialization rule (mandatory for reflection / Mono.Cecil consumers):** before comparing against or writing to Dataverse, canonicalize the array in this exact order:
+
+1. trim each entry and drop entries that are null, empty, or whitespace;
+2. lowercase each entry using the invariant culture;
+3. remove duplicates;
+4. sort ordinally (`StringComparer.Ordinal`);
+5. join with a single comma and no spaces — `"name,revenue"`;
+6. if the resulting sequence is empty, emit `null` rather than an empty string.
+
+Applying the same canonical form on both the read and the write side is what makes "is the registered step already up to date?" an order-insensitive, idempotent comparison. Consumers that canonicalize differently will produce spurious step updates on every run.
 
 ### Stage, mode, and user impersonation
 

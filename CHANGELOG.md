@@ -16,6 +16,27 @@ This library is published to **[NuGet.org](https://www.nuget.org/packages/XrmGho
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-01
+
+### Added
+
+- **Filtering attributes on `PluginExecutionConfigAttribute`.** New optional `public string[]? FilteringAttributes { get; set; }` property declaring the columns whose change should trigger an `Update` step.
+  - `null` and an empty array are **equivalent** and both mean "no filtering attributes". Downstream registrars must map both to a Dataverse `filteringattributes` value of `null`, never an empty string. Existing consumers are unaffected: this is a purely additive, backward-compatible change.
+  - Filtering attributes are meaningful **only for the `Update` message**. Downstream registrars must ignore the property for any other message declared on the same configuration.
+  - The attribute stores values **verbatim** (source order, casing, and duplicates preserved) and performs no normalization. Consumers must canonicalize before comparing against or writing to Dataverse: trim and drop blanks, lowercase invariant, de-duplicate, sort ordinally, comma-join without spaces, and emit `null` for an empty result. See `README.md` and the XML docs on the property for the normative rule.
+- Repo-local net8.0 test coverage for the new contract, including reflection-level assertions on the metadata actually baked into the assembly (default `null`, empty array, mixed-message declarations, and order/casing preservation).
+
+### Changed
+
+- Aligned `VersionPrefix`/`AssemblyVersion`/`FileVersion` in `XrmGhost.Attributes.csproj` to `1.1.0`. These values are informational for local builds only: `.github/workflows/publish.yml` overrides all of them via `/p:` at release time, using the version parsed from the first `[x.y.z]` entry of this file.
+- CI (`.github/workflows/ci.yml`) now installs the .NET 8 SDK alongside .NET 9 and no longer masks test failures with `continue-on-error: true`. The test project added in `1.0.0` is now genuinely gating.
+
+### Release handoff
+
+- **Publication is not automatic on merge.** After this branch is merged, someone must run `git tag v1.1.0 && git push origin v1.1.0` to trigger the publish workflow and push the package to NuGet.org. The tag must match the version of the top `[x.y.z]` entry above or the workflow fails its verification step.
+- **Downstream consumers must wait for the released package.** `xrmghost-dataverse` cannot consume `FilteringAttributes` until the `1.1.0` NuGet package is published by the tag step above.
+- **Public documentation is out of scope for this repo.** The attribute reference page on `docs.xrmghost.tech` lives in `xrmghost-docs` and still needs a separate follow-up task to document `FilteringAttributes`.
+
 ## [1.0.4] - 2026-07-07
 
 ### Changed
