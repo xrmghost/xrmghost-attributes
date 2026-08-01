@@ -5,9 +5,12 @@
     <Nullable>enable</Nullable>
     <!-- Also explicitly enable nullable context for the project -->
     <Deterministic>false</Deterministic>
-    <AssemblyVersion>0.6.27</AssemblyVersion>
-    <FileVersion>0.6.27</FileVersion>
-    <VersionPrefix>0.6.27</VersionPrefix>
+    <!-- Local/dev version only. The release build overrides Version, VersionPrefix,
+         AssemblyVersion, and FileVersion via /p: in .github/workflows/publish.yml,
+         sourcing the value from the first [x.y.z] entry in CHANGELOG.md. -->
+    <AssemblyVersion>1.1.0</AssemblyVersion>
+    <FileVersion>1.1.0</FileVersion>
+    <VersionPrefix>1.1.0</VersionPrefix>
     <!-- Strong Name Signing Configuration (conditional) -->
     <SignAssembly Condition="Exists('XrmGhost.Attributes.snk')">true</SignAssembly>
     <AssemblyOriginatorKeyFile Condition="Exists('XrmGhost.Attributes.snk')">XrmGhost.Attributes.snk</AssemblyOriginatorKeyFile>

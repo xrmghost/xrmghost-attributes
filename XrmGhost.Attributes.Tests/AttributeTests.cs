@@ -60,6 +60,125 @@ namespace XrmGhost.Attributes.Tests
             Assert.Equal(-1, attr.Mode);
             Assert.Null(attr.ImpersonatingUserId);
         }
+
+        [Fact]
+        public void FilteringAttributes_DefaultsToNull()
+        {
+            var attr = new PluginExecutionConfigAttribute("account", "Update");
+            Assert.Null(attr.FilteringAttributes);
+        }
+
+        [Fact]
+        public void FilteringAttributes_AcceptsEmptyArray()
+        {
+            var attr = new PluginExecutionConfigAttribute("account", "Update")
+            {
+                FilteringAttributes = new string[0]
+            };
+
+            Assert.NotNull(attr.FilteringAttributes);
+            Assert.Empty(attr.FilteringAttributes!);
+        }
+
+        [Fact]
+        public void FilteringAttributes_PreservesSourceOrderAndCasing()
+        {
+            var attr = new PluginExecutionConfigAttribute("account", "Update")
+            {
+                FilteringAttributes = new[] { "Revenue", "name", "AccountNumber" }
+            };
+
+            // The attribute is a passive carrier: it must not sort, lowercase, or
+            // de-duplicate. Canonicalization is the downstream consumer's job.
+            Assert.Equal(new[] { "Revenue", "name", "AccountNumber" }, attr.FilteringAttributes);
+        }
+
+        [Fact]
+        public void FilteringAttributes_PreservesDuplicatesVerbatim()
+        {
+            var attr = new PluginExecutionConfigAttribute("account", "Update")
+            {
+                FilteringAttributes = new[] { "name", "name" }
+            };
+
+            Assert.Equal(new[] { "name", "name" }, attr.FilteringAttributes);
+        }
+
+        [Fact]
+        public void FilteringAttributes_SetOnMixedMessageDeclaration_IsStoredAsDeclared()
+        {
+            // Filtering attributes are Update-only semantically, but the attribute itself
+            // performs no message-dependent validation. Downstream registrars are the ones
+            // that must ignore them for non-Update messages.
+            var attr = new PluginExecutionConfigAttribute("account", "Create", "Update")
+            {
+                FilteringAttributes = new[] { "name" }
+            };
+
+            Assert.Equal(new[] { "Create", "Update" }, attr.Messages);
+            Assert.Equal(new[] { "name" }, attr.FilteringAttributes);
+        }
+    }
+
+    /// <summary>
+    /// Reflection-level tests: these assert the shape actually baked into assembly metadata,
+    /// which is what downstream reflection/Cecil consumers read.
+    /// </summary>
+    public class PluginExecutionConfigFilteringAttributesMetadataTests
+    {
+        [PluginExecutionConfig("account", "Update")]
+        private sealed class NoFilteringPlugin { }
+
+        [PluginExecutionConfig("account", "Update", FilteringAttributes = new string[0])]
+        private sealed class EmptyFilteringPlugin { }
+
+        [PluginExecutionConfig("account", "Update", FilteringAttributes = new[] { "Revenue", "name", "AccountNumber" })]
+        private sealed class OrderedFilteringPlugin { }
+
+        [PluginExecutionConfig("account", "Create")]
+        [PluginExecutionConfig("account", "Update", FilteringAttributes = new[] { "name", "revenue" })]
+        private sealed class MixedMessagePlugin { }
+
+        private static PluginExecutionConfigAttribute[] ConfigsOf<T>()
+        {
+            return (PluginExecutionConfigAttribute[])typeof(T)
+                .GetCustomAttributes(typeof(PluginExecutionConfigAttribute), false);
+        }
+
+        [Fact]
+        public void UndeclaredFilteringAttributes_ReadBackAsNull()
+        {
+            var config = Assert.Single(ConfigsOf<NoFilteringPlugin>());
+            Assert.Null(config.FilteringAttributes);
+        }
+
+        [Fact]
+        public void EmptyFilteringAttributes_ReadBackAsEmptyArray()
+        {
+            var config = Assert.Single(ConfigsOf<EmptyFilteringPlugin>());
+            Assert.NotNull(config.FilteringAttributes);
+            Assert.Empty(config.FilteringAttributes!);
+        }
+
+        [Fact]
+        public void DeclaredFilteringAttributes_PreserveOrderAndCasing()
+        {
+            var config = Assert.Single(ConfigsOf<OrderedFilteringPlugin>());
+            Assert.Equal(new[] { "Revenue", "name", "AccountNumber" }, config.FilteringAttributes);
+        }
+
+        [Fact]
+        public void MixedMessageDeclarations_KeepFilteringAttributesPerConfiguration()
+        {
+            var configs = ConfigsOf<MixedMessagePlugin>();
+            Assert.Equal(2, configs.Length);
+
+            var createConfig = Assert.Single(configs, c => c.Messages != null && Array.IndexOf(c.Messages, "Create") >= 0);
+            var updateConfig = Assert.Single(configs, c => c.Messages != null && Array.IndexOf(c.Messages, "Update") >= 0);
+
+            Assert.Null(createConfig.FilteringAttributes);
+            Assert.Equal(new[] { "name", "revenue" }, updateConfig.FilteringAttributes);
+        }
     }
 
     public class PreImageAttributeTests
