@@ -49,6 +49,49 @@ namespace XrmGhost.Attributes
         public string? ImpersonatingUserId { get; set; }
 
         /// <summary>
+        /// Gets or sets the filtering attributes (columns) that restrict when the registered step fires.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <b>Null and empty are equivalent.</b> Both <see langword="null"/> and an empty array mean
+        /// "no filtering attributes": the step fires for any changed column. Downstream registrars must
+        /// map both cases to a Dataverse <c>filteringattributes</c> value of <see langword="null"/>
+        /// (not an empty string), so that upgrading from an earlier package version is a no-op.
+        /// </para>
+        /// <para>
+        /// <b>Update-only applicability.</b> Filtering attributes are meaningful only for the
+        /// <c>Update</c> message. If this configuration declares other messages (for example
+        /// <c>Create</c> or <c>Delete</c>), downstream registrars must ignore this property for those
+        /// messages and register them without filtering attributes. The attribute itself performs no
+        /// message-dependent validation: it stores exactly what the author declared.
+        /// </para>
+        /// <para>
+        /// <b>Canonical downstream serialization.</b> This attribute preserves the source order and the
+        /// source casing of the declared values verbatim. Consumers that read this metadata (via
+        /// reflection or Mono.Cecil) and compare it against, or write it to, Dataverse must first
+        /// canonicalize the array as follows, in this exact order:
+        /// </para>
+        /// <list type="number">
+        /// <item><description>trim each entry and drop entries that are null, empty, or whitespace;</description></item>
+        /// <item><description>lowercase each entry using the invariant culture;</description></item>
+        /// <item><description>remove duplicates;</description></item>
+        /// <item><description>sort ordinally (<see cref="System.StringComparer.Ordinal"/>);</description></item>
+        /// <item><description>join with a single comma and no spaces (<c>"name,revenue"</c>);</description></item>
+        /// <item><description>if the resulting sequence is empty, emit <see langword="null"/> rather than an empty string.</description></item>
+        /// </list>
+        /// <para>
+        /// Applying the same canonical form on both the read and the write side is what makes
+        /// "is the registered step already up to date?" a stable, order-insensitive comparison.
+        /// </para>
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// [PluginExecutionConfig("account", "Update", FilteringAttributes = new[] { "name", "revenue" })]
+        /// </code>
+        /// </example>
+        public string[]? FilteringAttributes { get; set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="PluginExecutionConfigAttribute"/> class.
         /// </summary>
         /// <param name="primaryEntityName">The logical name of the primary entity.</param>

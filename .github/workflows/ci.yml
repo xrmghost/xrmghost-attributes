@@ -21,7 +21,9 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: |
+            8.0.x
+            9.0.x
 
       - name: Restore dependencies
         run: dotnet restore xrmghost-attributes.sln
@@ -29,8 +31,6 @@ jobs:
       - name: Build solution
         run: dotnet build xrmghost-attributes.sln -c Release --no-restore
 
-      # NOTE: This step will activate once a test project is added to the solution (ADO-1166).
-      # Until then, it will succeed vacuously (no test projects = no tests to run).
+      # The net8.0 test project is present and gating: a failing test fails the build.
       - name: Run tests
         run: dotnet test xrmghost-attributes.sln --no-build --configuration Release
-        continue-on-error: true
