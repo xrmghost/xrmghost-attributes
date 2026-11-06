@@ -51,3 +51,6 @@ tasks.md
 # Strong Name Key Files
 *.snk
 *.pub
+
+# Internal swarm reports never go into public repos
+docs/swarm/
